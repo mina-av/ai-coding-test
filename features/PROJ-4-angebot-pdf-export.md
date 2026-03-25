@@ -1,6 +1,6 @@
 # PROJ-4: Angebot als PDF exportieren
 
-## Status: Planned
+## Status: In Progress
 **Created:** 2026-03-25
 **Last Updated:** 2026-03-25
 
@@ -38,7 +38,61 @@
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+**Designed:** 2026-03-25
+
+### Komponentenstruktur
+
+```
+Kalkulations-Seite (/kalkulation)
+└── ExportButton  [sichtbar wenn ≥1 Position mit EP > 0]
+    └── öffnet ExportModal
+
+ExportModal  (shadcn/ui Dialog)
+├── Formular
+│   ├── Projektname  (Pflichtfeld)
+│   ├── Kundenname   (Pflichtfeld)
+│   └── Datum        (vorausgefüllt mit heute, änderbar)
+├── Optionen
+│   └── Positionen ohne Preis:
+│       ○ Ausblenden
+│       ○ Als "Preis auf Anfrage" anzeigen
+├── Warnung  [wenn alle EP = 0]
+│   └── "Alle Preise sind 0. Wirklich exportieren?"
+├── Ladeindikator  [während Generierung]
+└── "PDF generieren" Button  [deaktiviert während Generierung]
+
+PDF-Dokument  (generiert im Hintergrund, A4)
+├── Kopfzeile  [wiederholt auf jeder Seite]
+│   ├── Projektname, Kundenname, Datum
+│   └── Seitennummer ("Seite 1 von 3")
+├── Positionstabelle
+│   └── Pos.-Nr. | Beschreibung | Menge | Einheit | EP | GP
+└── Fußzeile
+    └── Angebotssumme  (prominent hervorgehoben)
+```
+
+### Datenmodell
+
+Keine neuen Daten — liest aus bestehendem React Context (Positionen + EP + GP aus PROJ-3). Neue temporäre Eingaben im Modal: Projektname, Kundenname, Datum, Option für Positionen ohne Preis.
+
+### Ablauf
+
+React Context (Positionen + Preise) → Nutzer öffnet ExportModal → Projektname, Kundenname, Datum eingeben → "PDF generieren" → `@react-pdf/renderer` baut PDF im Browser → Automatischer Download: `Angebot_[Projektname]_[Datum].pdf`
+
+Kein Server-Aufruf nötig — alles passiert direkt im Browser.
+
+### Tech-Entscheidungen
+
+| Entscheidung | Warum |
+|---|---|
+| `@react-pdf/renderer` (client-seitig) | Generiert PDFs direkt aus React-Komponenten im Browser — kein Server, kein externes Service, A4-Layout und automatische Seitenumbrüche inklusive |
+| Kein Puppeteer | Puppeteer ist sehr schwer (Chrome-Dependency) und braucht einen Server — unnötig für diesen Anwendungsfall |
+| shadcn/ui Dialog für Modal | Bereits installiert, kein neues Paket |
+| Button deaktiviert während Export | Verhindert doppelten Download bei mehrfachem Klick |
+
+### Neue Abhängigkeiten
+
+- **`@react-pdf/renderer`** — PDF-Generierung aus React-Komponenten (client-seitig, kein Server nötig)
 
 ## QA Test Results
 _To be added by /qa_
