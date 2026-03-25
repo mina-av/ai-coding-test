@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { LVProvider } from "@/contexts/lv-context";
 
 export const metadata: Metadata = {
-  title: "AI Coding Starter Kit",
-  description: "Built with AI Agent Team System",
+  title: "BKI Angebots-Tool",
+  description: "Leistungsverzeichnisse automatisch auslesen und Angebote erstellen",
 };
 
 export default function RootLayout({
@@ -12,9 +13,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="de">
       <body className="antialiased">
-        {children}
+        <LVProvider>
+          {children}
+        </LVProvider>
       </body>
     </html>
   );
