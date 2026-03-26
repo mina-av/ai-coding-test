@@ -65,41 +65,14 @@ export function KalkulationsRow({ position, onUpdateEP, onFocusNext }: Kalkulati
         {position.einheit || '—'}
       </TableCell>
 
-      {/* BKI-Vorschlag */}
-      <TableCell className="w-32 text-right">
-        {position.bkiVorschlag !== undefined ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-sm text-muted-foreground cursor-help">
-                  {formatEuro(position.bkiVorschlag)}
-                  {position.bkiKonfidenz && (
-                    <Badge variant="outline" className="ml-1 text-xs py-0">
-                      {position.bkiKonfidenz}
-                    </Badge>
-                  )}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                {position.bkiKonfidenz
-                  ? KONFIDENZ_LABEL[position.bkiKonfidenz]
-                  : 'BKI-Vorschlag'}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : (
-          <span className="text-xs text-muted-foreground/50">—</span>
-        )}
-      </TableCell>
-
-      {/* EP-Eingabe */}
+      {/* Einheitspreis Netto — editierbar, BKI-Preis als Vorschlag */}
       <TableCell className="w-36">
         <div className="flex items-center gap-1">
           <Input
             ref={inputRef}
             type="text"
             inputMode="decimal"
-            placeholder="0,00"
+            placeholder={position.bkiVorschlag ? formatEuro(position.bkiVorschlag) : '0,00'}
             value={isFocused ? inputValue : ep > 0 ? formatEuro(ep) : ''}
             onChange={(e) => setInputValue(e.target.value)}
             onFocus={() => {
@@ -112,7 +85,7 @@ export function KalkulationsRow({ position, onUpdateEP, onFocusNext }: Kalkulati
               'h-8 text-right text-sm',
               isUnpriced ? 'border-amber-300 bg-amber-50 placeholder:text-amber-400' : '',
             ].join(' ')}
-            aria-label={`Nettopreis für ${position.kurzbeschreibung}`}
+            aria-label={`Einheitspreis Netto für ${position.kurzbeschreibung}`}
           />
           {isHighPrice && (
             <TooltipProvider>
@@ -127,7 +100,7 @@ export function KalkulationsRow({ position, onUpdateEP, onFocusNext }: Kalkulati
         </div>
       </TableCell>
 
-      {/* GP */}
+      {/* Netto (€) = Menge × EP */}
       <TableCell className="w-32 text-right text-sm font-medium">
         {mengeNichtNumerisch ? (
           <TooltipProvider>
@@ -135,12 +108,23 @@ export function KalkulationsRow({ position, onUpdateEP, onFocusNext }: Kalkulati
               <TooltipTrigger asChild>
                 <span className="text-muted-foreground cursor-help">—</span>
               </TooltipTrigger>
-              <TooltipContent>Menge ist nicht numerisch — GP kann nicht berechnet werden</TooltipContent>
+              <TooltipContent>Menge ist nicht numerisch — Betrag kann nicht berechnet werden</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         ) : (
           <span className={gp === 0 ? 'text-muted-foreground' : ''}>
             {formatEuro(gp ?? 0)}
+          </span>
+        )}
+      </TableCell>
+
+      {/* Brutto (€) = Netto × 1,19 */}
+      <TableCell className="w-32 text-right text-sm font-medium">
+        {mengeNichtNumerisch ? (
+          <span className="text-muted-foreground">—</span>
+        ) : (
+          <span className={gp === 0 ? 'text-muted-foreground' : ''}>
+            {formatEuro((gp ?? 0) * 1.19)}
           </span>
         )}
       </TableCell>

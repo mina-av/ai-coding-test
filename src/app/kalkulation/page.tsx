@@ -124,8 +124,8 @@ export default function KalkulationPage() {
                 <TableHead>Beschreibung</TableHead>
                 <TableHead className="w-20 text-right">Menge</TableHead>
                 <TableHead className="w-16">Einheit</TableHead>
-                <TableHead className="w-32 text-right">Einheitspreis Netto</TableHead>
-                <TableHead className="w-36 text-right">Netto (€)</TableHead>
+                <TableHead className="w-36 text-right">Einheitspreis Netto</TableHead>
+                <TableHead className="w-32 text-right">Netto (€)</TableHead>
                 <TableHead className="w-32 text-right">Brutto (€)</TableHead>
               </TableRow>
             </TableHeader>
@@ -140,11 +140,14 @@ export default function KalkulationPage() {
               ))}
               {/* Summenzeile */}
               <TableRow className="border-t-2 font-semibold bg-muted/30">
-                <TableCell colSpan={6} className="text-right text-sm text-muted-foreground">
+                <TableCell colSpan={5} className="text-right text-sm text-muted-foreground">
                   Angebotssumme Netto
                 </TableCell>
                 <TableCell className="text-right">
                   {formatEuro(angebotssumme)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatEuro(angebotssumme * 1.19)}
                 </TableCell>
               </TableRow>
             </TableBody>
