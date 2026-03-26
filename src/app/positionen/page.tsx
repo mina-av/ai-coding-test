@@ -100,6 +100,12 @@ export default function PositionenPage() {
             </TableBody>
           </Table>
         </div>
+
+        <div className="flex justify-end pt-2">
+          <Button onClick={() => router.push('/kalkulation')}>
+            Zur Kalkulation
+          </Button>
+        </div>
       </main>
 
       <DeleteConfirmDialog

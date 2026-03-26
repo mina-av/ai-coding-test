@@ -10,6 +10,8 @@ export interface LVPosition {
   menge: string
   einheit: string
   einheitspreis: number
+  bkiVorschlag?: number
+  bkiKonfidenz?: 'hoch' | 'mittel' | 'niedrig'
 }
 
 interface LVContextType {
