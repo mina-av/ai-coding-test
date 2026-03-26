@@ -98,8 +98,8 @@ export default function KalkulationPage() {
                 <TableHead className="w-20 text-right">Menge</TableHead>
                 <TableHead className="w-16">Einheit</TableHead>
                 <TableHead className="w-32 text-right">BKI-Vorschlag</TableHead>
-                <TableHead className="w-36 text-right">EP (€)</TableHead>
-                <TableHead className="w-32 text-right">GP (€)</TableHead>
+                <TableHead className="w-36 text-right">Netto (€)</TableHead>
+                <TableHead className="w-32 text-right">Brutto (€)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -113,10 +113,10 @@ export default function KalkulationPage() {
               ))}
               {/* Summenzeile */}
               <TableRow className="border-t-2 font-semibold bg-muted/30">
-                <TableCell colSpan={6} className="text-right">
-                  Angebotssumme
+                <TableCell colSpan={6} className="text-right text-sm text-muted-foreground">
+                  Angebotssumme Netto
                 </TableCell>
-                <TableCell className="text-right text-base">
+                <TableCell className="text-right">
                   {formatEuro(angebotssumme)}
                 </TableCell>
               </TableRow>
@@ -126,11 +126,21 @@ export default function KalkulationPage() {
 
         {/* Angebotssumme prominent */}
         <div className="flex justify-end">
-          <div className="rounded-lg border bg-card px-8 py-5 text-right shadow-sm">
-            <p className="text-sm text-muted-foreground mb-1">Angebotssumme (netto)</p>
-            <p className="text-3xl font-bold tracking-tight">{formatEuro(angebotssumme)}</p>
+          <div className="rounded-lg border bg-card px-8 py-5 text-right shadow-sm min-w-72 space-y-2">
+            <div className="flex justify-between gap-12 text-sm">
+              <span className="text-muted-foreground">Angebotssumme Netto</span>
+              <span className="font-medium">{formatEuro(angebotssumme)}</span>
+            </div>
+            <div className="flex justify-between gap-12 text-sm">
+              <span className="text-muted-foreground">enthaltene MwSt. (19 %)</span>
+              <span className="font-medium">{formatEuro(angebotssumme * 0.19)}</span>
+            </div>
+            <div className="flex justify-between gap-12 border-t pt-2">
+              <span className="font-semibold">Brutto</span>
+              <span className="text-xl font-bold">{formatEuro(angebotssumme * 1.19)}</span>
+            </div>
             {ohnePreis > 0 && (
-              <p className="text-xs text-amber-600 mt-1">
+              <p className="text-xs text-amber-600 pt-1">
                 inkl. {ohnePreis} Position{ohnePreis !== 1 ? 'en' : ''} ohne Preis
               </p>
             )}

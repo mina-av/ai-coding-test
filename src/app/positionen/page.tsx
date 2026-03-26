@@ -84,6 +84,7 @@ export default function PositionenPage() {
                 <TableHead>Beschreibung</TableHead>
                 <TableHead className="w-24 text-right">Menge</TableHead>
                 <TableHead className="w-20">Einheit</TableHead>
+                <TableHead className="w-36 text-right">Einheitspreis Netto</TableHead>
                 <TableHead className="w-12" />
               </TableRow>
             </TableHeader>

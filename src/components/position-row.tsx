@@ -6,6 +6,7 @@ import { TableCell, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { LVPosition } from '@/contexts/lv-context'
+import { formatEuro, parsePrice } from '@/lib/kalkulation'
 
 interface PositionRowProps {
   position: LVPosition
@@ -22,6 +23,9 @@ export function PositionRow({ position, onUpdate, onRequestDelete }: PositionRow
   const [editingField, setEditingField] = useState<Field | null>(null)
   const [draft, setDraft] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const [epFocused, setEpFocused] = useState(false)
+  const [epDraft, setEpDraft] = useState('')
+  const epRef = useRef<HTMLInputElement>(null)
 
   function startEdit(field: Field) {
     setEditingField(field)
@@ -98,6 +102,40 @@ export function PositionRow({ position, onUpdate, onRequestDelete }: PositionRow
       </TableCell>
       <TableCell className="w-20">
         {renderCell('einheit')}
+      </TableCell>
+      <TableCell className="w-36 text-right">
+        <Input
+          ref={epRef}
+          type="text"
+          inputMode="decimal"
+          placeholder="0,00"
+          value={epFocused
+            ? epDraft
+            : position.einheitspreis > 0
+              ? formatEuro(position.einheitspreis)
+              : ''}
+          onChange={(e) => setEpDraft(e.target.value)}
+          onFocus={() => {
+            setEpFocused(true)
+            setEpDraft(position.einheitspreis > 0 ? String(position.einheitspreis).replace('.', ',') : '')
+          }}
+          onBlur={() => {
+            setEpFocused(false)
+            onUpdate(position.id, { einheitspreis: parsePrice(epDraft) })
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === 'Tab') {
+              e.preventDefault()
+              epRef.current?.blur()
+            }
+            if (e.key === 'Escape') epRef.current?.blur()
+          }}
+          className={[
+            'h-7 text-sm text-right',
+            position.einheitspreis === 0 ? 'border-amber-300 bg-amber-50 placeholder:text-amber-400' : '',
+          ].join(' ')}
+          aria-label={`Einheitspreis Netto für ${position.kurzbeschreibung}`}
+        />
       </TableCell>
       <TableCell className="w-12 text-right">
         <Button

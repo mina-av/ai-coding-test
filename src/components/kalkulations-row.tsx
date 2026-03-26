@@ -112,7 +112,7 @@ export function KalkulationsRow({ position, onUpdateEP, onFocusNext }: Kalkulati
               'h-8 text-right text-sm',
               isUnpriced ? 'border-amber-300 bg-amber-50 placeholder:text-amber-400' : '',
             ].join(' ')}
-            aria-label={`Einheitspreis für ${position.kurzbeschreibung}`}
+            aria-label={`Nettopreis für ${position.kurzbeschreibung}`}
           />
           {isHighPrice && (
             <TooltipProvider>
