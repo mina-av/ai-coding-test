@@ -1,6 +1,6 @@
 # PROJ-1: PDF-Upload & KI-Extraktion
 
-## Status: Planned
+## Status: In Progress
 **Created:** 2026-03-25
 **Last Updated:** 2026-03-25
 
@@ -41,7 +41,42 @@
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+**Designed:** 2026-03-25
+
+### Komponentenstruktur
+```
+Upload-Seite (/upload)
+├── UploadZone
+│   ├── Drag-and-Drop Bereich (visuelles Ziel)
+│   ├── "Datei auswählen" Button (öffnet Datei-Dialog)
+│   └── Validierungshinweise (Typ/Größe)
+├── ExtractionProgress  [erscheint nach Upload]
+│   ├── Fortschrittsbalken / Spinner
+│   └── Statustext ("KI liest Leistungsverzeichnis aus...")
+└── ErrorAlert  [erscheint bei Fehler]
+    ├── Fehlermeldung (verständlicher Text)
+    └── "Erneut versuchen" Button
+```
+
+### Datenmodell
+Jede LV-Position enthält: ID, Positionsnummer, Kurzbeschreibung, Langbeschreibung (optional), Menge, Einheit, Einheitspreis (initial 0).
+Gespeichert in: React Context (Browser-Arbeitsspeicher) — kein Datenbank-Server für PROJ-1 nötig.
+
+### Ablauf
+1. Nutzer wählt/dropped PDF → Client prüft Typ (nur PDF) und Größe (max. 20 MB)
+2. PDF wird an API-Route `/api/extract` gesendet
+3. Server extrahiert Text mit `pdf-parse`
+4. Text wird an Claude API (claude-sonnet-4-6) geschickt → strukturiertes JSON der Positionen
+5. Positionen werden in React Context gespeichert
+6. Weiterleitung zur Positionsansicht (PROJ-2)
+
+### Neue Abhängigkeiten
+- `pdf-parse` — Text aus PDF extrahieren (server-seitig)
+- `@anthropic-ai/sdk` — Claude API Client
+- `react-dropzone` — Drag-and-Drop UI
+
+### Neue Umgebungsvariablen
+- `ANTHROPIC_API_KEY` — Claude API-Schlüssel (geheim, nie in Git)
 
 ## QA Test Results
 _To be added by /qa_

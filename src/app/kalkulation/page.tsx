@@ -1,8 +1,8 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Info } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { pdf } from '@react-pdf/renderer'
 import { useLV } from '@/contexts/lv-context'
 import { KalkulationsRow } from '@/components/kalkulations-row'
@@ -23,6 +23,46 @@ export default function KalkulationPage() {
   const router = useRouter()
   const rowRefs = useRef<(HTMLInputElement | null)[]>([])
   const [exportOpen, setExportOpen] = useState(false)
+  const [bkiLoading, setBkiLoading] = useState(false)
+  const [bkiError, setBkiError] = useState<string | null>(null)
+  const bkiMatchedRef = useRef(false)
+
+  // BKI-Matching einmalig beim Laden der Seite auslösen
+  useEffect(() => {
+    if (bkiMatchedRef.current || positionen.length === 0) return
+    bkiMatchedRef.current = true
+
+    async function runBkiMatch() {
+      setBkiLoading(true)
+      setBkiError(null)
+      try {
+        const res = await fetch('/api/bki/match', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ positionen }),
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          throw new Error(data.error ?? 'BKI-Matching fehlgeschlagen.')
+        }
+        const { matches } = await res.json()
+        matches.forEach((m: { id: string; bkiVorschlag: number; bkiKonfidenz: string }) => {
+          updatePosition(m.id, {
+            bkiVorschlag: m.bkiVorschlag,
+            bkiKonfidenz: m.bkiKonfidenz as 'hoch' | 'mittel' | 'niedrig',
+            einheitspreis: m.bkiVorschlag,
+          })
+        })
+      } catch (err) {
+        setBkiError(err instanceof Error ? err.message : 'BKI-Matching fehlgeschlagen.')
+      } finally {
+        setBkiLoading(false)
+      }
+    }
+
+    runBkiMatch()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [positionen.length])
 
   const ohnePreis = positionen.filter((p) => p.einheitspreis === 0).length
   const angebotssumme = calcAngebotssumme(positionen)
@@ -97,14 +137,20 @@ export default function KalkulationPage() {
           )}
         </div>
 
-        {/* BKI-Hinweis (solange Backend nicht verfügbar) */}
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            BKI-Preisvorschläge werden verfügbar, sobald das Backend eingerichtet ist.
-            Bitte Einheitspreise manuell eingeben.
-          </AlertDescription>
-        </Alert>
+        {/* BKI-Status */}
+        {bkiLoading && (
+          <Alert>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <AlertDescription>
+              KI sucht passende BKI-Preise… Dies kann einige Sekunden dauern.
+            </AlertDescription>
+          </Alert>
+        )}
+        {bkiError && (
+          <Alert variant="destructive">
+            <AlertDescription>{bkiError}</AlertDescription>
+          </Alert>
+        )}
 
         {/* Warnung wenn alle EP = 0 */}
         {alleOhnePreis && (

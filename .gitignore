@@ -37,3 +37,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# mcp
+.mcp.json
+
+.env.local
+
+# local PDF files (LV uploads and BKI reference data)
+*.pdf
+
