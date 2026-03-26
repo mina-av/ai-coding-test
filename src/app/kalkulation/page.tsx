@@ -1,23 +1,50 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Info } from 'lucide-react'
+import { pdf } from '@react-pdf/renderer'
 import { useLV } from '@/contexts/lv-context'
 import { KalkulationsRow } from '@/components/kalkulations-row'
+import { ExportModal, ExportFormData } from '@/components/export-modal'
+import { AngebotPDF } from '@/components/angebot-pdf'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from '@/components/ui/table'
 import { formatEuro, calcAngebotssumme } from '@/lib/kalkulation'
 
+function sanitizeFilename(s: string): string {
+  return s.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+}
+
 export default function KalkulationPage() {
   const { positionen, updatePosition } = useLV()
   const router = useRouter()
   const rowRefs = useRef<(HTMLInputElement | null)[]>([])
+  const [exportOpen, setExportOpen] = useState(false)
 
   const ohnePreis = positionen.filter((p) => p.einheitspreis === 0).length
   const angebotssumme = calcAngebotssumme(positionen)
+  const hatPreise = positionen.some((p) => p.einheitspreis > 0)
+
+  async function handleExport(data: ExportFormData) {
+    const blob = await pdf(
+      <AngebotPDF
+        projektname={data.projektname}
+        kundenname={data.kundenname}
+        datum={data.datum}
+        positionen={positionen}
+        ohnePreis={data.ohnePreis}
+      />
+    ).toBlob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `Angebot_${sanitizeFilename(data.projektname)}_${data.datum}.pdf`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
   const alleOhnePreis = positionen.length > 0 && ohnePreis === positionen.length
 
   function focusRow(index: number) {
@@ -149,11 +176,18 @@ export default function KalkulationPage() {
 
         {/* Navigation */}
         <div className="flex justify-end pt-2">
-          <Button onClick={() => router.push('/export')}>
+          <Button onClick={() => setExportOpen(true)} disabled={positionen.length === 0}>
             Angebot exportieren
           </Button>
         </div>
       </main>
+
+      <ExportModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        onExport={handleExport}
+        positionen={positionen}
+      />
     </div>
   )
 }
