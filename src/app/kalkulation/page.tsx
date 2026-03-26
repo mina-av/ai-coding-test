@@ -97,7 +97,7 @@ export default function KalkulationPage() {
                 <TableHead>Beschreibung</TableHead>
                 <TableHead className="w-20 text-right">Menge</TableHead>
                 <TableHead className="w-16">Einheit</TableHead>
-                <TableHead className="w-32 text-right">BKI-Vorschlag</TableHead>
+                <TableHead className="w-32 text-right">Einheitspreis Netto</TableHead>
                 <TableHead className="w-36 text-right">Netto (€)</TableHead>
                 <TableHead className="w-32 text-right">Brutto (€)</TableHead>
               </TableRow>
