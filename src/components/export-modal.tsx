@@ -21,6 +21,9 @@ export type OhnePreisOption = 'ausblenden' | 'auf-anfrage'
 export interface ExportFormData {
   projektname: string
   kundenname: string
+  kundenadresse: string
+  objektnummer: string
+  angebotsnummer: string
   datum: string
   ohnePreis: OhnePreisOption
 }
@@ -36,9 +39,19 @@ function todayISO() {
   return new Date().toISOString().split('T')[0]
 }
 
+function generateAngebotsnummer() {
+  const d = new Date()
+  const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
+  const rand = String(Math.floor(1000 + Math.random() * 9000))
+  return `ANG-${ymd}-${rand}`
+}
+
 export function ExportModal({ open, onClose, onExport, positionen }: ExportModalProps) {
   const [projektname, setProjektname] = useState('')
   const [kundenname, setKundenname] = useState('')
+  const [kundenadresse, setKundenadresse] = useState('')
+  const [objektnummer, setObjektnummer] = useState('')
+  const [angebotsnummer] = useState(generateAngebotsnummer)
   const [datum, setDatum] = useState(todayISO)
   const [ohnePreis, setOhnePreis] = useState<OhnePreisOption>('ausblenden')
   const [loading, setLoading] = useState(false)
@@ -50,7 +63,15 @@ export function ExportModal({ open, onClose, onExport, positionen }: ExportModal
     if (!canExport) return
     setLoading(true)
     try {
-      await onExport({ projektname: projektname.trim(), kundenname: kundenname.trim(), datum, ohnePreis })
+      await onExport({
+        projektname: projektname.trim(),
+        kundenname: kundenname.trim(),
+        kundenadresse: kundenadresse.trim(),
+        objektnummer: objektnummer.trim(),
+        angebotsnummer,
+        datum,
+        ohnePreis,
+      })
       onClose()
     } finally {
       setLoading(false)
@@ -93,6 +114,33 @@ export function ExportModal({ open, onClose, onExport, positionen }: ExportModal
               placeholder="z.B. Max Mustermann"
               disabled={loading}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="kundenadresse">Kundenadresse</Label>
+            <Input
+              id="kundenadresse"
+              value={kundenadresse}
+              onChange={(e) => setKundenadresse(e.target.value)}
+              placeholder="z.B. Musterstraße 1, 12345 Berlin"
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="objektnummer">Objektnummer</Label>
+            <Input
+              id="objektnummer"
+              value={objektnummer}
+              onChange={(e) => setObjektnummer(e.target.value)}
+              placeholder="z.B. OBJ-2026-001"
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="angebotsnummer">Angebotsnummer</Label>
+            <Input id="angebotsnummer" value={angebotsnummer} readOnly className="bg-muted" />
           </div>
 
           <div className="space-y-2">

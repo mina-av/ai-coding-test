@@ -11,7 +11,9 @@ export interface LVPosition {
   einheit: string
   einheitspreis: number
   bkiVorschlag?: number
-  bkiKonfidenz?: 'hoch' | 'mittel' | 'niedrig'
+  bkiKonfidenz?: 'hoch' | 'mittel' | 'niedrig' | 'schätzung'
+  bkiPositionsnummer?: string
+  bkiBeschreibung?: string
 }
 
 interface LVContextType {
@@ -19,6 +21,7 @@ interface LVContextType {
   setPositionen: (positionen: LVPosition[]) => void
   updatePosition: (id: string, changes: Partial<LVPosition>) => void
   addPosition: () => void
+  insertAfter: (id: string) => void
   deletePosition: (id: string) => void
 }
 
@@ -48,12 +51,29 @@ export function LVProvider({ children }: { children: ReactNode }) {
     setPositionen((prev) => [...prev, newPos])
   }, [])
 
+  const insertAfter = useCallback((id: string) => {
+    const newPos: LVPosition = {
+      id: String(nextId++),
+      positionsnummer: '',
+      kurzbeschreibung: '',
+      langbeschreibung: '',
+      menge: '',
+      einheit: '',
+      einheitspreis: 0,
+    }
+    setPositionen((prev) => {
+      const idx = prev.findIndex((p) => p.id === id)
+      if (idx === -1) return [...prev, newPos]
+      return [...prev.slice(0, idx + 1), newPos, ...prev.slice(idx + 1)]
+    })
+  }, [])
+
   const deletePosition = useCallback((id: string) => {
     setPositionen((prev) => prev.filter((p) => p.id !== id))
   }, [])
 
   return (
-    <LVContext.Provider value={{ positionen, setPositionen, updatePosition, addPosition, deletePosition }}>
+    <LVContext.Provider value={{ positionen, setPositionen, updatePosition, addPosition, insertAfter, deletePosition }}>
       {children}
     </LVContext.Provider>
   )

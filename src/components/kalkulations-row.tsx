@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useRef, KeyboardEvent } from 'react'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Plus, Trash2 } from 'lucide-react'
 import { TableCell, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Badge } from '@/components/ui/badge'
 import { LVPosition } from '@/contexts/lv-context'
 import { formatEuro, parsePrice, calcGP } from '@/lib/kalkulation'
 
@@ -13,6 +13,8 @@ interface KalkulationsRowProps {
   position: LVPosition
   onUpdateEP: (id: string, ep: number) => void
   onFocusNext: () => void
+  onInsertAfter: (id: string) => void
+  onDelete: (id: string) => void
 }
 
 const KONFIDENZ_LABEL: Record<string, string> = {
@@ -21,11 +23,12 @@ const KONFIDENZ_LABEL: Record<string, string> = {
   niedrig: 'Niedrige Übereinstimmung',
 }
 
-export function KalkulationsRow({ position, onUpdateEP, onFocusNext }: KalkulationsRowProps) {
+export function KalkulationsRow({ position, onUpdateEP, onFocusNext, onInsertAfter, onDelete }: KalkulationsRowProps) {
   const [inputValue, setInputValue] = useState(
     position.einheitspreis > 0 ? String(position.einheitspreis).replace('.', ',') : ''
   )
   const [isFocused, setIsFocused] = useState(false)
+  const [hovered, setHovered] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const ep = position.einheitspreis
@@ -51,12 +54,21 @@ export function KalkulationsRow({ position, onUpdateEP, onFocusNext }: Kalkulati
   }
 
   return (
-    <TableRow className={isUnpriced ? 'bg-amber-50/50' : undefined}>
+    <TableRow
+      className={isUnpriced ? 'bg-amber-50/50 relative group' : 'relative group'}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       <TableCell className="w-28 font-mono text-sm text-muted-foreground">
         {position.positionsnummer || '—'}
       </TableCell>
       <TableCell className="max-w-xs">
-        <span className="font-medium line-clamp-1">{position.kurzbeschreibung}</span>
+        <span className="font-medium line-clamp-2">{position.kurzbeschreibung}</span>
+        {position.langbeschreibung && (
+          <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+            {position.langbeschreibung}
+          </p>
+        )}
       </TableCell>
       <TableCell className="w-20 text-right text-sm">
         {position.menge || '—'}
@@ -67,6 +79,14 @@ export function KalkulationsRow({ position, onUpdateEP, onFocusNext }: Kalkulati
 
       {/* Einheitspreis Netto — editierbar, BKI-Preis als Vorschlag */}
       <TableCell className="w-36">
+        {position.bkiKonfidenz === 'schätzung' ? (
+          <p className="text-xs text-amber-600 mb-1">Marktschätzung</p>
+        ) : position.bkiPositionsnummer ? (
+          <p className="text-xs text-muted-foreground mb-1">
+            <span className="font-mono">{position.bkiPositionsnummer}</span>
+            {position.bkiBeschreibung && ` · ${position.bkiBeschreibung}`}
+          </p>
+        ) : null}
         <div className="flex items-center gap-1">
           <Input
             ref={inputRef}
@@ -126,6 +146,46 @@ export function KalkulationsRow({ position, onUpdateEP, onFocusNext }: Kalkulati
           <span className={gp === 0 ? 'text-muted-foreground' : ''}>
             {formatEuro((gp ?? 0) * 1.19)}
           </span>
+        )}
+      </TableCell>
+
+      {/* Aktionen: Einfügen + Löschen */}
+      <TableCell className="w-16 p-0">
+        {hovered && (
+          <div className="flex items-center gap-0.5">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                    onClick={() => onInsertAfter(position.id)}
+                    tabIndex={-1}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">Position darunter einfügen</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                    onClick={() => onDelete(position.id)}
+                    tabIndex={-1}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">Position löschen</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         )}
       </TableCell>
     </TableRow>

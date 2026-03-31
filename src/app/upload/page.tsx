@@ -25,6 +25,7 @@ export default function UploadPage() {
     try {
       const res = await fetch('/api/extract', {
         method: 'POST',
+        headers: { 'x-api-key': process.env.NEXT_PUBLIC_EXTRACT_API_KEY ?? '' },
         body: formData,
       })
 

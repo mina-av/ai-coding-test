@@ -12,14 +12,15 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from '@/components/ui/table'
-import { formatEuro, calcAngebotssumme } from '@/lib/kalkulation'
+import { formatEuro, calcAngebotssumme, calcGP } from '@/lib/kalkulation'
+import * as XLSX from 'xlsx'
 
 function sanitizeFilename(s: string): string {
   return s.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
 }
 
 export default function KalkulationPage() {
-  const { positionen, updatePosition } = useLV()
+  const { positionen, updatePosition, insertAfter, deletePosition } = useLV()
   const router = useRouter()
   const rowRefs = useRef<(HTMLInputElement | null)[]>([])
   const [exportOpen, setExportOpen] = useState(false)
@@ -38,7 +39,10 @@ export default function KalkulationPage() {
       try {
         const res = await fetch('/api/bki/match', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.NEXT_PUBLIC_EXTRACT_API_KEY ?? '',
+          },
           body: JSON.stringify({ positionen }),
         })
         if (!res.ok) {
@@ -46,11 +50,13 @@ export default function KalkulationPage() {
           throw new Error(data.error ?? 'BKI-Matching fehlgeschlagen.')
         }
         const { matches } = await res.json()
-        matches.forEach((m: { id: string; bkiVorschlag: number; bkiKonfidenz: string }) => {
+        matches.forEach((m: { id: string; bkiVorschlag: number; bkiKonfidenz: string; bkiPositionsnummer: string; bkiBeschreibung: string }) => {
           updatePosition(m.id, {
-            bkiVorschlag: m.bkiVorschlag,
+            bkiVorschlag: m.bkiVorschlag || undefined,
             bkiKonfidenz: m.bkiKonfidenz as 'hoch' | 'mittel' | 'niedrig',
-            einheitspreis: m.bkiVorschlag,
+            bkiPositionsnummer: m.bkiPositionsnummer || undefined,
+            bkiBeschreibung: m.bkiBeschreibung || undefined,
+            ...(m.bkiVorschlag > 0 ? { einheitspreis: m.bkiVorschlag } : {}),
           })
         })
       } catch (err) {
@@ -68,11 +74,44 @@ export default function KalkulationPage() {
   const angebotssumme = calcAngebotssumme(positionen)
   const hatPreise = positionen.some((p) => p.einheitspreis > 0)
 
+  function handleExcelExport() {
+    const rows = positionen.map((p) => {
+      const gp = calcGP(p.menge, p.einheitspreis)
+      return {
+        'Pos.-Nr.': p.positionsnummer,
+        'Kurzbeschreibung': p.kurzbeschreibung,
+        'Langbeschreibung': p.langbeschreibung ?? '',
+        'Menge': p.menge,
+        'Einheit': p.einheit,
+        'EP Netto (€)': p.einheitspreis > 0 ? p.einheitspreis : '',
+        'GP Netto (€)': gp !== null ? gp : '',
+        'GP Brutto (€)': gp !== null ? Math.round(gp * 1.19 * 100) / 100 : '',
+      }
+    })
+
+    const netto = calcAngebotssumme(positionen)
+    const mwst = Math.round(netto * 0.19 * 100) / 100
+    const brutto = Math.round(netto * 1.19 * 100) / 100
+
+    rows.push({} as typeof rows[0])
+    rows.push({ 'Pos.-Nr.': '', 'Kurzbeschreibung': 'Angebotssumme Netto', 'Langbeschreibung': '', 'Menge': '', 'Einheit': '', 'EP Netto (€)': '', 'GP Netto (€)': netto, 'GP Brutto (€)': '' })
+    rows.push({ 'Pos.-Nr.': '', 'Kurzbeschreibung': 'MwSt. 19 %', 'Langbeschreibung': '', 'Menge': '', 'Einheit': '', 'EP Netto (€)': '', 'GP Netto (€)': mwst, 'GP Brutto (€)': '' })
+    rows.push({ 'Pos.-Nr.': '', 'Kurzbeschreibung': 'Gesamtbetrag Brutto', 'Langbeschreibung': '', 'Menge': '', 'Einheit': '', 'EP Netto (€)': '', 'GP Netto (€)': '', 'GP Brutto (€)': brutto })
+
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Angebot')
+    XLSX.writeFile(wb, `Angebot_${new Date().toISOString().slice(0, 10)}.xlsx`)
+  }
+
   async function handleExport(data: ExportFormData) {
     const blob = await pdf(
       <AngebotPDF
         projektname={data.projektname}
         kundenname={data.kundenname}
+        kundenadresse={data.kundenadresse}
+        objektnummer={data.objektnummer}
+        angebotsnummer={data.angebotsnummer}
         datum={data.datum}
         positionen={positionen}
         ohnePreis={data.ohnePreis}
@@ -173,6 +212,7 @@ export default function KalkulationPage() {
                 <TableHead className="w-36 text-right">Einheitspreis Netto</TableHead>
                 <TableHead className="w-32 text-right">Netto (€)</TableHead>
                 <TableHead className="w-32 text-right">Brutto (€)</TableHead>
+                <TableHead className="w-8" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -182,6 +222,8 @@ export default function KalkulationPage() {
                   position={pos}
                   onUpdateEP={(id, ep) => updatePosition(id, { einheitspreis: ep })}
                   onFocusNext={() => focusRow(idx + 1)}
+                  onInsertAfter={insertAfter}
+                  onDelete={deletePosition}
                 />
               ))}
               {/* Summenzeile */}
@@ -224,7 +266,10 @@ export default function KalkulationPage() {
         </div>
 
         {/* Navigation */}
-        <div className="flex justify-end pt-2">
+        <div className="flex justify-end gap-2 pt-2">
+          <Button variant="outline" onClick={handleExcelExport} disabled={positionen.length === 0}>
+            Als Excel exportieren
+          </Button>
           <Button onClick={() => setExportOpen(true)} disabled={positionen.length === 0}>
             Angebot exportieren
           </Button>
