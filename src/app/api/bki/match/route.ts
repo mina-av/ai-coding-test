@@ -27,9 +27,9 @@ interface LVPosition {
 }
 
 export async function POST(req: NextRequest) {
-  // API-Key-Schutz (SEC-1)
-  const apiKey = req.headers.get('x-api-key')
-  if (!process.env.EXTRACT_API_KEY || apiKey !== process.env.EXTRACT_API_KEY) {
+  // API-Key-Schutz (SEC-1) — nur prüfen wenn EXTRACT_API_KEY gesetzt ist
+  const requiredKey = process.env.EXTRACT_API_KEY
+  if (requiredKey && req.headers.get('x-api-key') !== requiredKey) {
     return NextResponse.json({ error: 'Nicht autorisiert.' }, { status: 401 })
   }
 
