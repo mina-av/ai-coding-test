@@ -265,4 +265,8 @@ Gespeichert in: React Context (Browser-Arbeitsspeicher) — kein Datenbank-Serve
 - **Recommendation:** Do NOT deploy until SEC-1 (no auth) and SEC-2 (no rate limiting) are addressed. BUG-1 and BUG-2 (edge case error messages) should be fixed before moving to "In Review" status.
 
 ## Deployment
-_To be added by /deploy_
+**Deployed:** 2026-03-31
+**Platform:** Vercel
+**Branch:** main
+**Commit:** 1122892
+**Notes:** EXTRACT_API_KEY deaktiviert (NEXT_PUBLIC_ Build-time Issue); Rate Limiting (5 req/min) aktiv. Auth folgt mit PROJ-6.
