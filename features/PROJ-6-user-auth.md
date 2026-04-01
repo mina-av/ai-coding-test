@@ -78,7 +78,94 @@
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+**Designed:** 2026-04-01
+
+### Neue & geänderte Seiten
+
+```
+Neue Seiten:
+/login                     → E-Mail + Passwort Login
+/login/reset               → Passwort vergessen (E-Mail eingeben)
+/login/reset/confirm       → Passwort setzen (aus E-Mail-Link)
+/team                      → Nutzerverwaltung (nur Teamleiter)
+
+Geänderte Seiten:
+/ (Projektliste)           → Kalkulator: nur eigene; Teamleiter: alle + Ersteller-Info
+/positionen                → Teamleiter: alle Buttons deaktiviert (read-only)
+/kalkulation               → Teamleiter: keine Preiseingabe möglich
+
+Neue Komponenten:
+src/components/app-header.tsx       → gemeinsamer Header mit Logout + Nutzer-Info
+src/components/migration-banner.tsx → einmalige Migration localStorage → Supabase
+middleware.ts (Projektroot)         → schützt alle Seiten außer /login/*
+```
+
+### Datenmodell (Supabase-Tabellen)
+
+```
+teams
+  id, name, created_at
+
+profiles (ein Eintrag pro Nutzer)
+  id          → Supabase Auth User ID
+  email
+  rolle       → "kalkulator" | "teamleiter"
+  team_id     → Zugehörigkeit zum Team
+  created_at
+
+projekte (ersetzt localStorage)
+  id, name, status
+  owner_id    → welcher Kalkulator hat erstellt
+  team_id     → Teamzugehörigkeit
+  created_at, updated_at
+
+positionen (eigene Tabelle, war Teil von projekte in localStorage)
+  id, projekt_id
+  positionsnummer, kurzbeschreibung, langbeschreibung
+  menge, einheit, einheitspreis
+  bki_vorschlag, bki_konfidenz, bki_positionsnummer, bki_beschreibung
+  sort_order
+
+Row Level Security:
+  projekte:   Kalkulator CRUD (owner_id = auth.uid())
+              Teamleiter SELECT (team_id = eigenes Team)
+  positionen: folgt projekte-Muster
+  profiles:   Nutzer liest eigenes Profil; Teamleiter liest alle im Team
+```
+
+### Technische Entscheidungen
+
+| Entscheidung | Wahl | Begründung |
+|---|---|---|
+| Auth | Supabase Auth | bereits vorbereitet in `src/lib/supabase.ts`, E-Mail/Passwort + Magic Link out-of-the-box |
+| Routing-Schutz | Next.js Middleware | serverseitiger Session-Check vor dem Laden der Seite |
+| Einladungsflow | Supabase Admin API `inviteUserByEmail()` | kein eigenes E-Mail-System nötig |
+| Rollen | `profiles.rolle`-Feld, per RLS durchgesetzt | einfach, erweiterbar |
+| Migration | einmaliger Schritt beim ersten Login | localStorage → Supabase, danach localStorage löschen |
+| Positionen | eigene `positionen`-Tabelle | sauberere Trennung, bessere RLS-Granularität |
+
+### Neue Pakete
+
+| Paket | Zweck |
+|---|---|
+| `@supabase/supabase-js` | Supabase Client |
+| `@supabase/ssr` | Session-Handling für Next.js App Router + Middleware |
+
+### Migrationsablauf
+
+```
+Beim ersten Login nach PROJ-6-Deploy:
+  1. localStorage auf Daten prüfen
+  2. Falls vorhanden: Migrations-Banner anzeigen
+  3. Daten in Supabase-Tabellen schreiben
+  4. localStorage leeren
+  5. Projektliste aus Supabase laden
+
+Bei Fehler:
+  → Fehlermeldung, localStorage-Daten bleiben erhalten
+  → Nutzer kann Migration erneut starten
+```
 
 ## QA Test Results
 _To be added by /qa_
