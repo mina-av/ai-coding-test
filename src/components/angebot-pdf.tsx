@@ -118,8 +118,8 @@ export function AngebotPDF({ projektname, kundenname, kundenadresse, objektnumme
           <Text style={s.headerMeta}>Datum: {fmtDate(datum)}</Text>
         </View>
 
-        {/* Tabellenkopf */}
-        <View style={s.tableHeader}>
+        {/* Tabellenkopf — fixed wiederholt ihn auf jeder Seite */}
+        <View style={s.tableHeader} fixed>
           <Text style={s.colNr}>Pos.-Nr.</Text>
           <Text style={s.colDesc}>Beschreibung</Text>
           <Text style={s.colMenge}>Menge</Text>

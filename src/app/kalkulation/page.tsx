@@ -271,7 +271,7 @@ export default function KalkulationPage() {
           <Button variant="outline" onClick={handleExcelExport} disabled={positionen.length === 0}>
             Als Excel exportieren
           </Button>
-          <Button onClick={() => setExportOpen(true)} disabled={positionen.length === 0}>
+          <Button onClick={() => setExportOpen(true)} disabled={positionen.length === 0 || !hatPreise}>
             Angebot exportieren
           </Button>
         </div>
