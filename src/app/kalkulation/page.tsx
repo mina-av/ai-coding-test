@@ -224,6 +224,7 @@ export default function KalkulationPage() {
                   onFocusNext={() => focusRow(idx + 1)}
                   onInsertAfter={insertAfter}
                   onDelete={deletePosition}
+                  epRef={(el) => { rowRefs.current[idx] = el }}
                 />
               ))}
               {/* Summenzeile */}

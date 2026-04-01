@@ -7,6 +7,23 @@ import { join } from 'path'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+// In-memory rate limiter: max 5 requests per minute per IP
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT_MAX = 5
+const RATE_LIMIT_WINDOW_MS = 60 * 1000
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(ip)
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
+    return true
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false
+  entry.count++
+  return true
+}
+
 // BKI-Text wird einmalig extrahiert und im Prozess gecacht
 let bkiTextCache: string | null = null
 
@@ -31,6 +48,14 @@ export async function POST(req: NextRequest) {
   const requiredKey = process.env.EXTRACT_API_KEY
   if (requiredKey && req.headers.get('x-api-key') !== requiredKey) {
     return NextResponse.json({ error: 'Nicht autorisiert.' }, { status: 401 })
+  }
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json(
+      { error: 'Zu viele Anfragen. Bitte warten Sie eine Minute und versuchen Sie es erneut.' },
+      { status: 429 }
+    )
   }
 
   let positionen: LVPosition[]
@@ -79,9 +104,18 @@ Format: [{"id":"...","bkiVorschlag":0.00,"bkiKonfidenz":"hoch","bkiPositionsnumm
 BKI Kompakt 2023 Preisdatenbank (Auszug):
 ${bkiContext}`
 
+    function sanitizeForPrompt(s: string): string {
+      return s.replace(/[\x00-\x1F\x7F]/g, ' ').slice(0, 300)
+    }
+
     const buildUserMessage = (batch: LVPosition[]) => {
       const positionenJson = JSON.stringify(
-        batch.map((p) => ({ id: p.id, beschreibung: p.kurzbeschreibung, menge: p.menge, einheit: p.einheit }))
+        batch.map((p) => ({
+          id: p.id,
+          beschreibung: sanitizeForPrompt(p.kurzbeschreibung),
+          menge: sanitizeForPrompt(p.menge),
+          einheit: sanitizeForPrompt(p.einheit),
+        }))
       )
       return `LV-Positionen:\n${positionenJson}`
     }

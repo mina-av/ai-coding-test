@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, KeyboardEvent } from 'react'
+import React, { useState, useRef, KeyboardEvent } from 'react'
 import { AlertTriangle, Plus, Trash2 } from 'lucide-react'
 import { TableCell, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
@@ -15,6 +15,7 @@ interface KalkulationsRowProps {
   onFocusNext: () => void
   onInsertAfter: (id: string) => void
   onDelete: (id: string) => void
+  epRef?: (el: HTMLInputElement | null) => void
 }
 
 const KONFIDENZ_LABEL: Record<string, string> = {
@@ -23,7 +24,7 @@ const KONFIDENZ_LABEL: Record<string, string> = {
   niedrig: 'Niedrige Übereinstimmung',
 }
 
-export function KalkulationsRow({ position, onUpdateEP, onFocusNext, onInsertAfter, onDelete }: KalkulationsRowProps) {
+export function KalkulationsRow({ position, onUpdateEP, onFocusNext, onInsertAfter, onDelete, epRef }: KalkulationsRowProps) {
   const [inputValue, setInputValue] = useState(
     position.einheitspreis > 0 ? String(position.einheitspreis).replace('.', ',') : ''
   )
@@ -89,7 +90,7 @@ export function KalkulationsRow({ position, onUpdateEP, onFocusNext, onInsertAft
         ) : null}
         <div className="flex items-center gap-1">
           <Input
-            ref={inputRef}
+            ref={(el) => { (inputRef as React.MutableRefObject<HTMLInputElement | null>).current = el; epRef?.(el) }}
             type="text"
             inputMode="decimal"
             placeholder={position.bkiVorschlag ? formatEuro(position.bkiVorschlag) : '0,00'}
