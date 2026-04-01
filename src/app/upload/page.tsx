@@ -6,6 +6,7 @@ import { UploadZone } from '@/components/upload-zone'
 import { ExtractionProgress } from '@/components/extraction-progress'
 import { ErrorAlert } from '@/components/error-alert'
 import { useLV } from '@/contexts/lv-context'
+import { useProjekte } from '@/contexts/projekte-context'
 
 type PageState = 'idle' | 'extracting' | 'error'
 
@@ -13,6 +14,7 @@ export default function UploadPage() {
   const [state, setState] = useState<PageState>('idle')
   const [errorMessage, setErrorMessage] = useState('')
   const { setPositionen } = useLV()
+  const { createProject } = useProjekte()
   const router = useRouter()
 
   async function handleFileSelect(file: File) {
@@ -35,6 +37,8 @@ export default function UploadPage() {
       }
 
       const { positionen } = await res.json()
+      const name = `Projekt ${new Date().toLocaleDateString('de-DE')}`
+      createProject(name, positionen)
       setPositionen(positionen)
       router.push('/positionen')
     } catch (err) {

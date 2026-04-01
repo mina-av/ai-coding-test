@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ProjekteProvider } from "@/contexts/projekte-context";
 import { LVProvider } from "@/contexts/lv-context";
 
 export const metadata: Metadata = {
@@ -15,9 +16,11 @@ export default function RootLayout({
   return (
     <html lang="de">
       <body className="antialiased">
-        <LVProvider>
-          {children}
-        </LVProvider>
+        <ProjekteProvider>
+          <LVProvider>
+            {children}
+          </LVProvider>
+        </ProjekteProvider>
       </body>
     </html>
   );

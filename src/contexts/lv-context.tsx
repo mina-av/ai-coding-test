@@ -1,6 +1,7 @@
 'use client'
 
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react'
+import { useProjekte } from './projekte-context'
 
 export interface LVPosition {
   id: string
@@ -31,6 +32,20 @@ let nextId = 1000
 
 export function LVProvider({ children }: { children: ReactNode }) {
   const [positionen, setPositionen] = useState<LVPosition[]>([])
+  const { updateActiveProject, activeProjectId } = useProjekte()
+
+  // Refs to avoid stale closures in auto-save effect
+  const updateRef = useRef(updateActiveProject)
+  const idRef = useRef(activeProjectId)
+  useEffect(() => { updateRef.current = updateActiveProject }, [updateActiveProject])
+  useEffect(() => { idRef.current = activeProjectId }, [activeProjectId])
+
+  // Auto-save whenever positionen changes and a project is active
+  const isFirst = useRef(true)
+  useEffect(() => {
+    if (isFirst.current) { isFirst.current = false; return }
+    if (idRef.current) updateRef.current(positionen)
+  }, [positionen])
 
   const updatePosition = useCallback((id: string, changes: Partial<LVPosition>) => {
     setPositionen((prev) =>
