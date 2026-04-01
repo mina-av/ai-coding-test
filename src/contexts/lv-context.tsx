@@ -28,8 +28,6 @@ interface LVContextType {
 
 const LVContext = createContext<LVContextType | null>(null)
 
-let nextId = 1000
-
 export function LVProvider({ children }: { children: ReactNode }) {
   const [positionen, setPositionen] = useState<LVPosition[]>([])
   const { updateActiveProject, activeProjectId } = useProjekte()
@@ -55,7 +53,7 @@ export function LVProvider({ children }: { children: ReactNode }) {
 
   const addPosition = useCallback(() => {
     const newPos: LVPosition = {
-      id: String(nextId++),
+      id: crypto.randomUUID(),
       positionsnummer: '',
       kurzbeschreibung: '',
       langbeschreibung: '',
@@ -68,7 +66,7 @@ export function LVProvider({ children }: { children: ReactNode }) {
 
   const insertAfter = useCallback((id: string) => {
     const newPos: LVPosition = {
-      id: String(nextId++),
+      id: crypto.randomUUID(),
       positionsnummer: '',
       kurzbeschreibung: '',
       langbeschreibung: '',

@@ -86,7 +86,9 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
   const renameProject = useCallback((id: string, name: string) => {
     setProjekte(prev => {
       const updated = prev.map(p => p.id === id ? { ...p, name, updatedAt: new Date().toISOString() } : p)
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)) } catch {}
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)) } catch {
+        setStorageError('Speicher ist voll. Bitte löschen Sie alte Projekte.')
+      }
       return updated
     })
   }, [])
@@ -94,7 +96,9 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
   const deleteProject = useCallback((id: string) => {
     setProjekte(prev => {
       const updated = prev.filter(p => p.id !== id)
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)) } catch {}
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)) } catch {
+        setStorageError('Speicher ist voll. Bitte löschen Sie alte Projekte.')
+      }
       return updated
     })
     if (activeProjectIdRef.current === id) {
@@ -106,7 +110,9 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
   const setProjectStatus = useCallback((id: string, status: Projekt['status']) => {
     setProjekte(prev => {
       const updated = prev.map(p => p.id === id ? { ...p, status, updatedAt: new Date().toISOString() } : p)
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)) } catch {}
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)) } catch {
+        setStorageError('Speicher ist voll. Bitte löschen Sie alte Projekte.')
+      }
       return updated
     })
   }, [])

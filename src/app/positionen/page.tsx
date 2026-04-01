@@ -56,9 +56,14 @@ export default function PositionenPage() {
       <header className="border-b">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">BKI Angebots-Tool</h1>
-          <Button variant="outline" size="sm" onClick={() => router.push('/upload')}>
-            Neues LV hochladen
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
+              Alle Projekte
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => router.push('/upload')}>
+              Neues LV hochladen
+            </Button>
+          </div>
         </div>
       </header>
 

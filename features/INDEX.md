@@ -16,7 +16,7 @@
 | PROJ-2 | LV-Positionen anzeigen & bearbeiten | Deployed | [PROJ-2-lv-positionen-ansicht.md](PROJ-2-lv-positionen-ansicht.md) | 2026-03-25 |
 | PROJ-3 | Preiseingabe & Kalkulation | Deployed | [PROJ-3-preiseingabe-kalkulation.md](PROJ-3-preiseingabe-kalkulation.md) | 2026-03-25 |
 | PROJ-4 | Angebot als PDF exportieren | Deployed | [PROJ-4-angebot-pdf-export.md](PROJ-4-angebot-pdf-export.md) | 2026-03-25 |
-| PROJ-5 | Projektverwaltung (mehrere LVs) | Planned | [PROJ-5-projektverwaltung.md](PROJ-5-projektverwaltung.md) | 2026-03-25 |
+| PROJ-5 | Projektverwaltung (mehrere LVs) | Deployed | [PROJ-5-projektverwaltung.md](PROJ-5-projektverwaltung.md) | 2026-03-25 |
 | PROJ-6 | User Auth & Teamzugang | Planned | [PROJ-6-user-auth.md](PROJ-6-user-auth.md) | 2026-03-25 |
 
 <!-- Add features above this line -->
