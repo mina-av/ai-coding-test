@@ -13,7 +13,7 @@
 | ID | Feature | Status | Spec | Created |
 |----|---------|--------|------|---------|
 | PROJ-1 | PDF-Upload & KI-Extraktion | Deployed | [PROJ-1-pdf-upload-extraktion.md](PROJ-1-pdf-upload-extraktion.md) | 2026-03-25 |
-| PROJ-2 | LV-Positionen anzeigen & bearbeiten | Planned | [PROJ-2-lv-positionen-ansicht.md](PROJ-2-lv-positionen-ansicht.md) | 2026-03-25 |
+| PROJ-2 | LV-Positionen anzeigen & bearbeiten | Deployed | [PROJ-2-lv-positionen-ansicht.md](PROJ-2-lv-positionen-ansicht.md) | 2026-03-25 |
 | PROJ-3 | Preiseingabe & Kalkulation | In Progress | [PROJ-3-preiseingabe-kalkulation.md](PROJ-3-preiseingabe-kalkulation.md) | 2026-03-25 |
 | PROJ-4 | Angebot als PDF exportieren | In Progress | [PROJ-4-angebot-pdf-export.md](PROJ-4-angebot-pdf-export.md) | 2026-03-25 |
 | PROJ-5 | Projektverwaltung (mehrere LVs) | Planned | [PROJ-5-projektverwaltung.md](PROJ-5-projektverwaltung.md) | 2026-03-25 |

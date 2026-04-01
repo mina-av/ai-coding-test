@@ -1,8 +1,8 @@
 # PROJ-2: LV-Positionen anzeigen & bearbeiten
 
-## Status: Planned
+## Status: Deployed
 **Created:** 2026-03-25
-**Last Updated:** 2026-03-25
+**Last Updated:** 2026-04-01
 
 ## Dependencies
 - Requires: PROJ-1 (PDF-Upload & KI-Extraktion) — extrahierte Positionen als Datengrundlage
@@ -46,4 +46,7 @@ _To be added by /architecture_
 _To be added by /qa_
 
 ## Deployment
-_To be added by /deploy_
+**Deployed:** 2026-04-01
+**Platform:** Vercel
+**Branch:** main
+**Notes:** Bereits als Teil von PROJ-1 deployed. Spec war nicht aktualisiert worden.
