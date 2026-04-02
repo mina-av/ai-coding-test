@@ -37,8 +37,11 @@ export async function POST(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
+  // NEXT_PUBLIC_APP_URL hat Vorrang vor request.nextUrl.origin (verhindert localhost in Prod)
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? request.nextUrl.origin
+
   const { error } = await adminClient.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${request.nextUrl.origin}/login/reset/confirm`,
+    redirectTo: `${appUrl}/login/reset/confirm`,
     // app_metadata: vom Admin gesetzt, nicht vom User überschreibbar
     data: { app_metadata: { rolle } },
   })
