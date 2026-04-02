@@ -10,7 +10,9 @@ if (!process.env.ANTHROPIC_API_KEY) {
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-const MAX_PDF_PAGES = 100
+// Für PDFs über diesem Schwellwert wird Text-Chunking statt base64 genutzt,
+// da max_tokens für viele Positionen sonst nicht ausreicht
+const MAX_BASE64_PAGES = 5
 // Each chunk sent to Claude — ~20k chars keeps JSON output well within max_tokens
 const CHUNK_SIZE = 20000
 // Overlap between chunks so positions at boundaries are not missed
@@ -143,7 +145,7 @@ export async function POST(req: NextRequest) {
     const pageCount: number = pdfMeta.numpages ?? 0
     let allRaw: RawPosition[] = []
 
-    if (pageCount <= MAX_PDF_PAGES) {
+    if (pageCount <= MAX_BASE64_PAGES) {
       // Detect image-only (scanned) PDFs before calling Claude
       if (!pdfMeta.text || pdfMeta.text.trim().length < 50) {
         return NextResponse.json(
