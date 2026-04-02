@@ -97,15 +97,23 @@ export default function ProjektePage() {
           </div>
         )}
 
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold">
-            {rolle === 'teamleiter' ? 'Alle Projekte' : 'Meine Projekte'}
-          </h2>
-          {projekte.length > 0 && (
-            <p className="text-muted-foreground mt-1">
-              {projekte.length} Projekt{projekte.length !== 1 ? 'e' : ''}
-              {rolle === 'teamleiter' && ' · Nur-Lesen'}
-            </p>
+        <div className="mb-6 flex items-start justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">
+              {rolle === 'teamleiter' ? 'Alle Projekte' : 'Meine Projekte'}
+            </h2>
+            {projekte.length > 0 && (
+              <p className="text-muted-foreground mt-1">
+                {projekte.length} Projekt{projekte.length !== 1 ? 'e' : ''}
+                {rolle === 'teamleiter' && ' · Nur-Lesen'}
+              </p>
+            )}
+          </div>
+          {rolle !== 'teamleiter' && (
+            <Button onClick={() => router.push('/upload')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Neues Projekt
+            </Button>
           )}
         </div>
 
