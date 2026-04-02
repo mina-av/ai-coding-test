@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation'
 import { MoreHorizontal, Plus, FolderOpen, Pencil, Trash2, CheckCircle, Clock } from 'lucide-react'
 import { useProjekte } from '@/contexts/projekte-context'
 import { useLV } from '@/contexts/lv-context'
+import { useUser } from '@/hooks/use-user'
+import { AppHeader } from '@/components/app-header'
+import { MigrationBanner } from '@/components/migration-banner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -42,6 +45,7 @@ function fmtDate(iso: string): string {
 export default function ProjektePage() {
   const { projekte, setActiveProjectId, renameProject, deleteProject, setProjectStatus, storageError, clearStorageError } = useProjekte()
   const { setPositionen } = useLV()
+  const { email, rolle } = useUser()
   const router = useRouter()
 
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -81,17 +85,11 @@ export default function ProjektePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold tracking-tight">BKI Angebots-Tool</h1>
-          <Button onClick={() => router.push('/upload')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Neues Projekt
-          </Button>
-        </div>
-      </header>
+      <AppHeader email={email} rolle={rolle} />
 
       <main className="max-w-4xl mx-auto px-6 py-8">
+        <MigrationBanner />
+
         {storageError && (
           <div className="mb-4 p-3 bg-destructive/10 text-destructive text-sm rounded-md flex items-center justify-between">
             <span>{storageError}</span>
@@ -100,10 +98,13 @@ export default function ProjektePage() {
         )}
 
         <div className="mb-6">
-          <h2 className="text-2xl font-bold">Meine Projekte</h2>
+          <h2 className="text-2xl font-bold">
+            {rolle === 'teamleiter' ? 'Alle Projekte' : 'Meine Projekte'}
+          </h2>
           {projekte.length > 0 && (
             <p className="text-muted-foreground mt-1">
               {projekte.length} Projekt{projekte.length !== 1 ? 'e' : ''}
+              {rolle === 'teamleiter' && ' · Nur-Lesen'}
             </p>
           )}
         </div>

@@ -3,8 +3,10 @@
 import { useRef, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
+import { useUser } from '@/hooks/use-user'
 import { pdf } from '@react-pdf/renderer'
 import { useLV } from '@/contexts/lv-context'
+import { AppHeader } from '@/components/app-header'
 import { KalkulationsRow } from '@/components/kalkulations-row'
 import { ExportModal, ExportFormData } from '@/components/export-modal'
 import { AngebotPDF } from '@/components/angebot-pdf'
@@ -21,6 +23,8 @@ function sanitizeFilename(s: string): string {
 
 export default function KalkulationPage() {
   const { positionen, updatePosition, insertAfter, deletePosition } = useLV()
+  const { email, rolle } = useUser()
+  const readOnly = rolle === 'teamleiter'
   const router = useRouter()
   const rowRefs = useRef<(HTMLInputElement | null)[]>([])
   const [exportOpen, setExportOpen] = useState(false)
@@ -134,16 +138,14 @@ export default function KalkulationPage() {
   if (positionen.length === 0) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="border-b">
-          <div className="max-w-5xl mx-auto px-6 py-4">
-            <h1 className="text-xl font-semibold tracking-tight">BKI Angebots-Tool</h1>
-          </div>
-        </header>
+        <AppHeader email={email} rolle={rolle} />
         <main className="max-w-5xl mx-auto px-6 py-16 flex flex-col items-center gap-4 text-center">
           <p className="text-muted-foreground">Keine Positionen vorhanden.</p>
-          <Button variant="outline" onClick={() => router.push('/upload')}>
-            LV hochladen
-          </Button>
+          {!readOnly && (
+            <Button variant="outline" onClick={() => router.push('/upload')}>
+              LV hochladen
+            </Button>
+          )}
         </main>
       </div>
     )
@@ -151,19 +153,7 @@ export default function KalkulationPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold tracking-tight">BKI Angebots-Tool</h1>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
-              Alle Projekte
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => router.push('/positionen')}>
-              Zurück zu Positionen
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AppHeader email={email} rolle={rolle} />
 
       <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
         {/* Header */}
@@ -230,6 +220,7 @@ export default function KalkulationPage() {
                   onInsertAfter={insertAfter}
                   onDelete={deletePosition}
                   epRef={(el) => { rowRefs.current[idx] = el }}
+                  readOnly={readOnly}
                 />
               ))}
               {/* Summenzeile */}
@@ -276,9 +267,11 @@ export default function KalkulationPage() {
           <Button variant="outline" onClick={handleExcelExport} disabled={positionen.length === 0}>
             Als Excel exportieren
           </Button>
-          <Button onClick={() => setExportOpen(true)} disabled={positionen.length === 0 || !hatPreise}>
-            Angebot exportieren
-          </Button>
+          {!readOnly && (
+            <Button onClick={() => setExportOpen(true)} disabled={positionen.length === 0 || !hatPreise}>
+              Angebot exportieren
+            </Button>
+          )}
         </div>
       </main>
 

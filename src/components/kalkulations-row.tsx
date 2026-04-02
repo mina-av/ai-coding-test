@@ -16,6 +16,7 @@ interface KalkulationsRowProps {
   onInsertAfter: (id: string) => void
   onDelete: (id: string) => void
   epRef?: (el: HTMLInputElement | null) => void
+  readOnly?: boolean
 }
 
 const KONFIDENZ_LABEL: Record<string, string> = {
@@ -24,7 +25,7 @@ const KONFIDENZ_LABEL: Record<string, string> = {
   niedrig: 'Niedrige Übereinstimmung',
 }
 
-export function KalkulationsRow({ position, onUpdateEP, onFocusNext, onInsertAfter, onDelete, epRef }: KalkulationsRowProps) {
+export function KalkulationsRow({ position, onUpdateEP, onFocusNext, onInsertAfter, onDelete, epRef, readOnly = false }: KalkulationsRowProps) {
   const [inputValue, setInputValue] = useState(
     position.einheitspreis > 0 ? String(position.einheitspreis).replace('.', ',') : ''
   )
@@ -97,14 +98,17 @@ export function KalkulationsRow({ position, onUpdateEP, onFocusNext, onInsertAft
             value={isFocused ? inputValue : ep > 0 ? formatEuro(ep) : ''}
             onChange={(e) => setInputValue(e.target.value)}
             onFocus={() => {
+              if (readOnly) return
               setIsFocused(true)
               setInputValue(ep > 0 ? String(ep).replace('.', ',') : '')
             }}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
+            readOnly={readOnly}
             className={[
               'h-8 text-right text-sm',
               isUnpriced ? 'border-amber-300 bg-amber-50 placeholder:text-amber-400' : '',
+              readOnly ? 'cursor-default opacity-75' : '',
             ].join(' ')}
             aria-label={`Einheitspreis Netto für ${position.kurzbeschreibung}`}
           />
@@ -152,7 +156,7 @@ export function KalkulationsRow({ position, onUpdateEP, onFocusNext, onInsertAft
 
       {/* Aktionen: Einfügen + Löschen */}
       <TableCell className="w-16 p-0">
-        {hovered && (
+        {hovered && !readOnly && (
           <div className="flex items-center gap-0.5">
             <TooltipProvider>
               <Tooltip>

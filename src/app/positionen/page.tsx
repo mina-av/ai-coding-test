@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { useLV } from '@/contexts/lv-context'
+import { useUser } from '@/hooks/use-user'
+import { AppHeader } from '@/components/app-header'
 import { PositionRow } from '@/components/position-row'
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
 import { Button } from '@/components/ui/button'
@@ -17,6 +19,8 @@ import {
 
 export default function PositionenPage() {
   const { positionen, updatePosition, addPosition, deletePosition } = useLV()
+  const { email, rolle } = useUser()
+  const readOnly = rolle === 'teamleiter'
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const router = useRouter()
 
@@ -30,21 +34,21 @@ export default function PositionenPage() {
   if (positionen.length === 0) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="border-b">
-          <div className="max-w-5xl mx-auto px-6 py-4">
-            <h1 className="text-xl font-semibold tracking-tight">BKI Angebots-Tool</h1>
-          </div>
-        </header>
+        <AppHeader email={email} rolle={rolle} />
         <main className="max-w-5xl mx-auto px-6 py-16 flex flex-col items-center gap-4 text-center">
           <p className="text-muted-foreground">Keine Positionen vorhanden.</p>
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => router.push('/upload')}>
-              LV hochladen
-            </Button>
-            <Button onClick={addPosition}>
-              <Plus className="h-4 w-4 mr-2" />
-              Position hinzufügen
-            </Button>
+            {!readOnly && (
+              <Button variant="outline" onClick={() => router.push('/upload')}>
+                LV hochladen
+              </Button>
+            )}
+            {!readOnly && (
+              <Button onClick={addPosition}>
+                <Plus className="h-4 w-4 mr-2" />
+                Position hinzufügen
+              </Button>
+            )}
           </div>
         </main>
       </div>
@@ -53,32 +57,23 @@ export default function PositionenPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold tracking-tight">BKI Angebots-Tool</h1>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
-              Alle Projekte
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => router.push('/upload')}>
-              Neues LV hochladen
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AppHeader email={email} rolle={rolle} />
 
       <main className="max-w-5xl mx-auto px-6 py-8">
         <div className="mb-6 flex items-start justify-between">
           <div>
             <h2 className="text-2xl font-bold">Leistungsverzeichnis</h2>
             <p className="text-muted-foreground mt-1">
-              {positionen.length} Position{positionen.length !== 1 ? 'en' : ''} · Klick auf ein Feld zum Bearbeiten
+              {positionen.length} Position{positionen.length !== 1 ? 'en' : ''}
+              {!readOnly && ' · Klick auf ein Feld zum Bearbeiten'}
             </p>
           </div>
-          <Button onClick={addPosition}>
-            <Plus className="h-4 w-4 mr-2" />
-            Position hinzufügen
-          </Button>
+          {!readOnly && (
+            <Button onClick={addPosition}>
+              <Plus className="h-4 w-4 mr-2" />
+              Position hinzufügen
+            </Button>
+          )}
         </div>
 
         <div className="rounded-md border">
@@ -100,6 +95,7 @@ export default function PositionenPage() {
                   onUpdate={updatePosition}
                   onDelete={deletePosition}
                   onRequestDelete={(id) => setDeleteTargetId(id)}
+                  readOnly={readOnly}
                 />
               ))}
             </TableBody>

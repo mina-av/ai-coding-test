@@ -12,18 +12,20 @@ interface PositionRowProps {
   onUpdate: (id: string, changes: Partial<LVPosition>) => void
   onDelete: (id: string) => void
   onRequestDelete: (id: string) => void
+  readOnly?: boolean
 }
 
 type Field = keyof Pick<LVPosition, 'positionsnummer' | 'kurzbeschreibung' | 'menge' | 'einheit'>
 
 const FIELDS: Field[] = ['positionsnummer', 'kurzbeschreibung', 'menge', 'einheit']
 
-export function PositionRow({ position, onUpdate, onRequestDelete }: PositionRowProps) {
+export function PositionRow({ position, onUpdate, onRequestDelete, readOnly = false }: PositionRowProps) {
   const [editingField, setEditingField] = useState<Field | null>(null)
   const [draft, setDraft] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   function startEdit(field: Field) {
+    if (readOnly) return
     setEditingField(field)
     setDraft(position[field])
     setTimeout(() => inputRef.current?.focus(), 0)
@@ -69,8 +71,8 @@ export function PositionRow({ position, onUpdate, onRequestDelete }: PositionRow
       <span
         onClick={() => startEdit(field)}
         className={[
-          'block cursor-pointer rounded px-1 py-0.5 -mx-1',
-          'hover:bg-muted transition-colors min-h-[1.5rem]',
+          'block rounded px-1 py-0.5 -mx-1 min-h-[1.5rem]',
+          readOnly ? 'cursor-default' : 'cursor-pointer hover:bg-muted transition-colors',
           !value ? 'text-muted-foreground italic' : '',
           className ?? '',
         ].join(' ')}
@@ -100,15 +102,17 @@ export function PositionRow({ position, onUpdate, onRequestDelete }: PositionRow
         {renderCell('einheit')}
       </TableCell>
       <TableCell className="w-12 text-right">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
-          onClick={() => onRequestDelete(position.id)}
-          aria-label="Position löschen"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        {!readOnly && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+            onClick={() => onRequestDelete(position.id)}
+            aria-label="Position löschen"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
       </TableCell>
     </TableRow>
   )
