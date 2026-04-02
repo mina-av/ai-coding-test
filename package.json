@@ -1,7 +1,7 @@
 {
-  "name": "ai-coding-starter-kit",
+  "name": "bki-kalkulation",
   "version": "1.0.0",
-  "description": "AI Coding Starter Kit with AI Agent Team System for Claude Code",
+  "description": "BKI Kalkulation — Leistungsverzeichnisse automatisch auslesen und Angebote erstellen",
   "private": true,
   "scripts": {
     "dev": "next dev",

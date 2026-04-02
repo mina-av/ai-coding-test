@@ -43,7 +43,7 @@ export function AppHeader({ email, rolle }: AppHeaderProps) {
           className="text-xl font-semibold tracking-tight hover:opacity-80 transition-opacity"
           aria-label="Zur Startseite"
         >
-          BKI Angebots-Tool
+          BKI Kalkulation
         </Link>
 
         <div className="flex items-center gap-3">

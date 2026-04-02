@@ -35,7 +35,7 @@ export default function ResetPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b">
         <div className="max-w-3xl mx-auto px-6 py-4">
-          <h1 className="text-xl font-semibold tracking-tight">BKI Angebots-Tool</h1>
+          <h1 className="text-xl font-semibold tracking-tight">BKI Kalkulation</h1>
         </div>
       </header>
 

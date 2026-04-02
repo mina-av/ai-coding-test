@@ -4,7 +4,7 @@ import { ProjekteProvider } from "@/contexts/projekte-context";
 import { LVProvider } from "@/contexts/lv-context";
 
 export const metadata: Metadata = {
-  title: "BKI Angebots-Tool",
+  title: "BKI Kalkulation",
   description: "Leistungsverzeichnisse automatisch auslesen und Angebote erstellen",
 };
 
