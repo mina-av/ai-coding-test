@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse/lib/pdf-parse')
 import Anthropic from '@anthropic-ai/sdk'
-import { readFileSync } from 'fs'
-import { join } from 'path'
+import { createClient } from '@supabase/supabase-js'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -29,8 +28,19 @@ let bkiTextCache: string | null = null
 
 async function getBkiText(): Promise<string> {
   if (bkiTextCache) return bkiTextCache
-  const bkiPath = join(process.cwd(), 'BKI kompakt 2023 Gesamt.pdf')
-  const buffer = readFileSync(bkiPath)
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data, error } = await supabase.storage
+    .from('bki-assets')
+    .download('BKI kompakt 2023 Gesamt.pdf')
+
+  if (error || !data) throw new Error(`Supabase Storage Fehler: ${error?.message}`)
+
+  const buffer = Buffer.from(await data.arrayBuffer())
   const result = await pdfParse(buffer)
   bkiTextCache = result.text
   return bkiTextCache as string
