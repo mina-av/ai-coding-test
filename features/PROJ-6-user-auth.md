@@ -396,4 +396,19 @@ Bei Fehler:
 **Blockers before deploy:** BUG-7 (data loss), BUG-9 (role escalation), BUG-5 (feature incomplete), BUG-6 (RLS unverifiable), BUG-1, BUG-2, BUG-3, BUG-4, BUG-8.
 
 ## Deployment
-_To be added by /deploy_
+
+**Deployed:** 2026-04-02
+**Production URL:** https://ai-coding-test-phi.vercel.app
+**Deploy ID:** dpl_3rEBk6YixypN1ADFdRuMUaoLE9yu
+**Platform:** Vercel (mina-avs-projects/ai-coding-test)
+
+**Environment Variables set in Vercel:**
+- `NEXT_PUBLIC_SUPABASE_URL` ✓
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` ✓
+- `SUPABASE_SERVICE_ROLE_KEY` ✓
+- `ANTHROPIC_API_KEY` ✓
+
+**Known Open Items (post-deploy):**
+- BUG-5: Rollenbasierte Projektliste erfordert Supabase-Datenschicht (ProjekteContext migration)
+- BUG-10: Unused `useRouter` import in reset/confirm
+- SQL-Migration in Supabase Dashboard einspielen: `supabase/migrations/20260402_001_initial_schema.sql`
