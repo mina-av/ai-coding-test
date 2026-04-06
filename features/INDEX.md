@@ -18,7 +18,8 @@
 | PROJ-4 | Angebot als PDF exportieren | Deployed | [PROJ-4-angebot-pdf-export.md](PROJ-4-angebot-pdf-export.md) | 2026-03-25 |
 | PROJ-5 | Projektverwaltung (mehrere LVs) | Deployed | [PROJ-5-projektverwaltung.md](PROJ-5-projektverwaltung.md) | 2026-03-25 |
 | PROJ-6 | User Auth & Teamzugang | Deployed | [PROJ-6-user-auth.md](PROJ-6-user-auth.md) | 2026-04-01 |
+| PROJ-7 | Anfragen speichern | Deployed | — | 2026-04-06 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-7
+## Next Available ID: PROJ-8

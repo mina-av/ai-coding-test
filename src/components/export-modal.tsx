@@ -53,7 +53,7 @@ export function ExportModal({ open, onClose, onExport, positionen, initialData }
   const [kundenname, setKundenname] = useState(initialData?.kundenname ?? '')
   const [kundenadresse, setKundenadresse] = useState(initialData?.kundenadresse ?? '')
   const [objektnummer, setObjektnummer] = useState(initialData?.objektnummer ?? '')
-  const [angebotsnummer] = useState(generateAngebotsnummer)
+  const [angebotsnummer, setAngebotsnummer] = useState(generateAngebotsnummer)
   const [datum, setDatum] = useState(initialData?.datum ?? todayISO())
   const [ohnePreis, setOhnePreis] = useState<OhnePreisOption>(initialData?.ohnePreis ?? 'ausblenden')
   const [loading, setLoading] = useState(false)
@@ -66,6 +66,7 @@ export function ExportModal({ open, onClose, onExport, positionen, initialData }
       setObjektnummer(initialData?.objektnummer ?? '')
       setDatum(initialData?.datum ?? todayISO())
       setOhnePreis(initialData?.ohnePreis ?? 'ausblenden')
+      setAngebotsnummer(generateAngebotsnummer())
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
