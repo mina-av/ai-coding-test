@@ -6,6 +6,3 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 }
-
-// Singleton für Client-Komponenten
-export const supabase = createClient()
