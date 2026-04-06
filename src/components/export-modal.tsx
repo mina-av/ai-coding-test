@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Loader2 } from 'lucide-react'
 import {
   Dialog,
@@ -15,8 +15,9 @@ import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LVPosition } from '@/contexts/lv-context'
+import { OhnePreisOption } from '@/contexts/projekte-context'
 
-export type OhnePreisOption = 'ausblenden' | 'auf-anfrage'
+export type { OhnePreisOption }
 
 export interface ExportFormData {
   projektname: string
@@ -33,6 +34,7 @@ interface ExportModalProps {
   onClose: () => void
   onExport: (data: ExportFormData) => Promise<void>
   positionen: LVPosition[]
+  initialData?: Partial<Omit<ExportFormData, 'angebotsnummer'>>
 }
 
 function todayISO() {
@@ -46,15 +48,27 @@ function generateAngebotsnummer() {
   return `ANG-${ymd}-${rand}`
 }
 
-export function ExportModal({ open, onClose, onExport, positionen }: ExportModalProps) {
-  const [projektname, setProjektname] = useState('')
-  const [kundenname, setKundenname] = useState('')
-  const [kundenadresse, setKundenadresse] = useState('')
-  const [objektnummer, setObjektnummer] = useState('')
+export function ExportModal({ open, onClose, onExport, positionen, initialData }: ExportModalProps) {
+  const [projektname, setProjektname] = useState(initialData?.projektname ?? '')
+  const [kundenname, setKundenname] = useState(initialData?.kundenname ?? '')
+  const [kundenadresse, setKundenadresse] = useState(initialData?.kundenadresse ?? '')
+  const [objektnummer, setObjektnummer] = useState(initialData?.objektnummer ?? '')
   const [angebotsnummer] = useState(generateAngebotsnummer)
-  const [datum, setDatum] = useState(todayISO)
-  const [ohnePreis, setOhnePreis] = useState<OhnePreisOption>('ausblenden')
+  const [datum, setDatum] = useState(initialData?.datum ?? todayISO())
+  const [ohnePreis, setOhnePreis] = useState<OhnePreisOption>(initialData?.ohnePreis ?? 'ausblenden')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setProjektname(initialData?.projektname ?? '')
+      setKundenname(initialData?.kundenname ?? '')
+      setKundenadresse(initialData?.kundenadresse ?? '')
+      setObjektnummer(initialData?.objektnummer ?? '')
+      setDatum(initialData?.datum ?? todayISO())
+      setOhnePreis(initialData?.ohnePreis ?? 'ausblenden')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   const alleOhnePreis = positionen.every((p) => p.einheitspreis === 0)
   const canExport = projektname.trim() !== '' && kundenname.trim() !== ''

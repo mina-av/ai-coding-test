@@ -3,6 +3,19 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react'
 import { LVPosition } from './lv-context'
 
+export type OhnePreisOption = 'ausblenden' | 'auf-anfrage'
+
+export interface SavedAngebot {
+  projektname: string
+  kundenname: string
+  kundenadresse: string
+  objektnummer: string
+  angebotsnummer: string
+  datum: string
+  ohnePreis: OhnePreisOption
+  exportedAt: string
+}
+
 export interface Projekt {
   id: string
   name: string
@@ -10,6 +23,7 @@ export interface Projekt {
   createdAt: string
   updatedAt: string
   positionen: LVPosition[]
+  angebote: SavedAngebot[]
 }
 
 const STORAGE_KEY = 'bki-projekte'
@@ -23,6 +37,7 @@ interface ProjekteContextType {
   renameProject: (id: string, name: string) => void
   deleteProject: (id: string) => void
   setProjectStatus: (id: string, status: Projekt['status']) => void
+  addAngebot: (data: Omit<SavedAngebot, 'exportedAt'>) => void
   storageError: string | null
   clearStorageError: () => void
 }
@@ -56,7 +71,7 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
   const createProject = useCallback((name: string, positionen: LVPosition[]): string => {
     const id = crypto.randomUUID()
     const now = new Date().toISOString()
-    const neu: Projekt = { id, name, status: 'in-bearbeitung', createdAt: now, updatedAt: now, positionen }
+    const neu: Projekt = { id, name, status: 'in-bearbeitung', createdAt: now, updatedAt: now, positionen, angebote: [] }
     setProjekte(prev => {
       const updated = [neu, ...prev]
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)) } catch {
@@ -107,6 +122,23 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const addAngebot = useCallback((data: Omit<SavedAngebot, 'exportedAt'>) => {
+    const id = activeProjectIdRef.current
+    if (!id) return
+    const angebot: SavedAngebot = { ...data, exportedAt: new Date().toISOString() }
+    setProjekte(prev => {
+      const updated = prev.map(p =>
+        p.id === id
+          ? { ...p, angebote: [angebot, ...(p.angebote ?? [])], updatedAt: new Date().toISOString() }
+          : p
+      )
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)) } catch {
+        setStorageError('Speicher ist voll. Bitte löschen Sie alte Projekte.')
+      }
+      return updated
+    })
+  }, [])
+
   const setProjectStatus = useCallback((id: string, status: Projekt['status']) => {
     setProjekte(prev => {
       const updated = prev.map(p => p.id === id ? { ...p, status, updatedAt: new Date().toISOString() } : p)
@@ -127,6 +159,7 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
       renameProject,
       deleteProject,
       setProjectStatus,
+      addAngebot,
       storageError,
       clearStorageError: () => setStorageError(null),
     }}>

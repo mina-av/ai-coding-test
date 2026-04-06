@@ -2,9 +2,10 @@
 
 import { useRef, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { Loader2, FileText, ChevronDown, ChevronUp } from 'lucide-react'
 import { useUser } from '@/hooks/use-user'
 import { useLV } from '@/contexts/lv-context'
+import { useProjekte } from '@/contexts/projekte-context'
 import { AppHeader } from '@/components/app-header'
 import { KalkulationsRow } from '@/components/kalkulations-row'
 import { ExportModal, ExportFormData } from '@/components/export-modal'
@@ -21,13 +22,19 @@ function sanitizeFilename(s: string): string {
 export default function KalkulationPage() {
   const { positionen, updatePosition, insertAfter, deletePosition } = useLV()
   const { email, rolle } = useUser()
+  const { projekte, activeProjectId, addAngebot } = useProjekte()
   const readOnly = rolle === 'teamleiter'
   const router = useRouter()
   const rowRefs = useRef<(HTMLInputElement | null)[]>([])
   const [exportOpen, setExportOpen] = useState(false)
+  const [anfragenOpen, setAnfragenOpen] = useState(false)
   const [bkiLoading, setBkiLoading] = useState(false)
   const [bkiError, setBkiError] = useState<string | null>(null)
   const bkiMatchedRef = useRef(false)
+
+  const aktiveProjekt = projekte.find(p => p.id === activeProjectId)
+  const gespeicherteAngebote = aktiveProjekt?.angebote ?? []
+  const lastAngebot = gespeicherteAngebote[0]
 
   // BKI-Matching einmalig beim Laden der Seite auslösen
   useEffect(() => {
@@ -131,6 +138,7 @@ export default function KalkulationPage() {
     a.download = `Angebot_${sanitizeFilename(data.projektname)}_${data.datum}.pdf`
     a.click()
     URL.revokeObjectURL(url)
+    addAngebot(data)
   }
   const alleOhnePreis = positionen.length > 0 && ohnePreis === positionen.length
 
@@ -268,6 +276,38 @@ export default function KalkulationPage() {
           </div>
         </div>
 
+        {/* Gespeicherte Anfragen */}
+        {gespeicherteAngebote.length > 0 && (
+          <div className="rounded-md border">
+            <button
+              className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted/50 transition-colors"
+              onClick={() => setAnfragenOpen(v => !v)}
+            >
+              <span className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                Gespeicherte Anfragen ({gespeicherteAngebote.length})
+              </span>
+              {anfragenOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+            </button>
+            {anfragenOpen && (
+              <div className="border-t divide-y">
+                {gespeicherteAngebote.map((ang, i) => (
+                  <div key={i} className="px-4 py-3 text-sm flex flex-col gap-0.5">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="font-medium">{ang.angebotsnummer}</span>
+                      <span className="text-muted-foreground text-xs">
+                        {new Date(ang.exportedAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </span>
+                    </div>
+                    <span className="text-muted-foreground">{ang.projektname} · {ang.kundenname}</span>
+                    {ang.kundenadresse && <span className="text-muted-foreground text-xs">{ang.kundenadresse}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Navigation */}
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="outline" onClick={handleExcelExport} disabled={positionen.length === 0}>
@@ -286,6 +326,7 @@ export default function KalkulationPage() {
         onClose={() => setExportOpen(false)}
         onExport={handleExport}
         positionen={positionen}
+        initialData={lastAngebot}
       />
     </div>
   )
