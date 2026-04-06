@@ -4,18 +4,15 @@ import { useRef, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { useUser } from '@/hooks/use-user'
-import { pdf } from '@react-pdf/renderer'
 import { useLV } from '@/contexts/lv-context'
 import { AppHeader } from '@/components/app-header'
 import { KalkulationsRow } from '@/components/kalkulations-row'
 import { ExportModal, ExportFormData } from '@/components/export-modal'
-import { AngebotPDF } from '@/components/angebot-pdf'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from '@/components/ui/table'
 import { formatEuro, calcAngebotssumme, calcGP } from '@/lib/kalkulation'
-import * as XLSX from 'xlsx'
 
 function sanitizeFilename(s: string): string {
   return s.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
@@ -80,7 +77,8 @@ export default function KalkulationPage() {
   const angebotssumme = calcAngebotssumme(positionen)
   const hatPreise = positionen.some((p) => p.einheitspreis > 0)
 
-  function handleExcelExport() {
+  async function handleExcelExport() {
+    const XLSX = await import('xlsx')
     const rows = positionen.map((p) => {
       const gp = calcGP(p.menge, p.einheitspreis)
       return {
@@ -111,6 +109,10 @@ export default function KalkulationPage() {
   }
 
   async function handleExport(data: ExportFormData) {
+    const [{ pdf }, { AngebotPDF }] = await Promise.all([
+      import('@react-pdf/renderer'),
+      import('@/components/angebot-pdf'),
+    ])
     const blob = await pdf(
       <AngebotPDF
         projektname={data.projektname}
