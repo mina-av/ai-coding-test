@@ -80,12 +80,12 @@ export function ExportModal({ open, onClose, onExport, positionen }: ExportModal
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !loading && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Angebot exportieren</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="space-y-4 py-2 overflow-y-auto flex-1 pr-1">
           {alleOhnePreis && (
             <Alert variant="destructive">
               <AlertDescription>

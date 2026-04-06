@@ -553,5 +553,185 @@ No change. Still relies on `NEXT_PUBLIC_` key for "auth".
 - **Regressions:** None detected against PROJ-1 through PROJ-6
 - **Recommendation:** Perform live browser testing of keyboard navigation (BUG-PROJ3-12) to confirm whether the ref fix resolves Enter/Tab behavior. Fix column width mismatch (BUG-PROJ3-13) -- trivial CSS change. Add Zod validation to BKI match API input and output (BUG-PROJ3-6, BUG-PROJ3-7) to satisfy backend rules. Add `overflow-x-auto` wrapper around the table for mobile viewports.
 
+## QA Test Results – 2026-04-06 (Fix: PROJ-3 Menge & Einheit editable)
+**Tested:** 2026-04-06
+**Tester:** QA / Red-Team Pen-Test
+**Scope:** New fix — Menge and Einheit fields made editable in `KalkulationsRow`. `onUpdateMenge` and `onUpdateEinheit` props added; local state introduced; `readOnly` prop respected.
+**Files reviewed:**
+- `src/components/kalkulations-row.tsx` (changed file)
+- `src/app/kalkulation/page.tsx` (changed file)
+- `src/contexts/lv-context.tsx` (updatePosition, LVPosition type)
+- `src/lib/kalkulation.ts` (calcGP behaviour after menge change)
+
+---
+
+### Acceptance Criteria Re-Test (affected criteria only)
+
+| # | Criterion | Result | Notes |
+|---|-----------|--------|-------|
+| AC-1 | Jede Position hat ein Eingabefeld fuer den Einheitspreis (EP) | **PASS** | Unchanged. Input still present (line 201). |
+| AC-2 | GP = Menge x EP berechnet und angezeigt in Echtzeit | **PARTIAL** | See BUG-PROJ3-14. GP is calculated from `position.menge` (context value), not the local `mengeValue` state. During active editing of the Menge field, GP does not update until blur commits to context. Existing EP behavior is the same pattern, so this is consistent but worth noting. |
+| AC-4 | Einheitspreise jederzeit editierbar | **PASS** | Unaffected by this fix. |
+| AC-5 | Positionen ohne Preis visuell hervorgehoben | **PASS** | Unaffected. |
+| AC-8 | Negative Einheitspreise nicht erlaubt | **PASS** | Unaffected. Note: no corresponding validation exists for Menge (see BUG-PROJ3-15). |
+
+---
+
+### New Feature: Menge & Einheit Editable
+
+| Test Case | Result | Notes |
+|-----------|--------|-------|
+| Menge column shows Input (not static text) in editable mode | **PASS** | Lines 127-135: `<Input>` rendered when `!readOnly`. `type="text"` correct for German menge values. |
+| Einheit column shows Input (not static text) in editable mode | **PASS** | Lines 141-150: `<Input>` rendered when `!readOnly`. |
+| readOnly mode shows static span for Menge | **PASS** | Line 124-126: `<span>` rendered with `position.menge \|\| '—'` when `readOnly`. Correct. |
+| readOnly mode shows static span for Einheit | **PASS** | Line 138-140: `<span>` rendered with `position.einheit \|\| '—'` when `readOnly`. Correct. |
+| onUpdateMenge called on blur with current value | **PASS** | Line 131: `onBlur={() => onUpdateMenge?.(position.id, mengeValue)}`. Optional chaining is appropriate; prop is always passed from page.tsx line 221. |
+| onUpdateEinheit called on blur with current value | **PASS** | Line 145: `onBlur={() => onUpdateEinheit?.(position.id, einheitValue)}`. Same pattern. |
+| page.tsx passes onUpdateMenge to KalkulationsRow | **PASS** | Line 221: `onUpdateMenge={(id, menge) => updatePosition(id, { menge })}`. Calls `updatePosition` from LVContext. Triggers auto-save via useEffect in `lv-context.tsx`. |
+| page.tsx passes onUpdateEinheit to KalkulationsRow | **PASS** | Line 222: `onUpdateEinheit={(id, einheit) => updatePosition(id, { einheit })}`. Same pattern. |
+| Typing in Menge updates local state immediately | **PASS** | Line 129: `onChange={(e) => setMengeValue(e.target.value)}`. Local state updates on every keystroke. |
+| Typing in Einheit updates local state immediately | **PASS** | Line 143: `onChange={(e) => setEinheitValue(e.target.value)}`. Same. |
+| GP recalculates correctly after Menge blur | **PASS** | `onBlur` calls `onUpdateMenge` → `updatePosition` → context state updates → React re-render → `calcGP(position.menge, ep)` recalculates. Chain is correct. |
+| calcGP handles German menge format (comma) | **PASS** | `kalkulation.ts` line 33: `menge.replace(',', '.')` before `parseFloat`. So "10,5" → 10.5. Correct. |
+| calcGP returns null for non-numeric menge | **PASS** | `kalkulation.ts` line 34: `if (isNaN(m)) return null`. Empty string after blur → `parseFloat("")` → NaN → null → "—" shown. |
+| Menge input has aria-label | **PASS** | Line 133: `aria-label={\`Menge für ${position.kurzbeschreibung}\`}`. |
+| Einheit input has aria-label | **PASS** | Line 147: `aria-label={\`Einheit für ${position.kurzbeschreibung}\`}`. |
+| Props typed as optional (onUpdateMenge?, onUpdateEinheit?) | **PASS** | Interface lines 15-16 declare both as optional (`?`). Consistent with the `epRef?` pattern. |
+| LVPosition.menge typed as string | **PASS** | `lv-context.tsx` line 12: `menge: string`. `updatePosition(id, { menge })` passes a string. Types align. |
+| LVPosition.einheit typed as string | **PASS** | `lv-context.tsx` line 13: `einheit: string`. Same. |
+| Empty Menge input (user clears field) | **PASS (with caveat)** | Empty string is valid; `calcGP("", ep)` → `parseFloat("")` → NaN → null → GP shows "—". User sees the tooltip explaining non-numeric menge. Acceptable per spec edge case. No crash. |
+| Menge with only whitespace | **PARTIAL** | `calcGP("   ", ep)` → `parseFloat("   ")` → NaN → null → "—". Whitespace-only menge is accepted as-is by `onUpdateMenge`. No trim applied before persisting to context. Minor data quality issue. |
+
+**New Feature Tests: 18 checked, 16 PASS, 2 PARTIAL**
+
+---
+
+### Edge Cases
+
+| Edge Case | Result | Notes |
+|-----------|--------|-------|
+| Menge is 0 → GP = 0 | **PASS** | `calcGP("0", ep)` = 0. No change in behavior. |
+| Menge is not numeric (e.g., "pauschal") → GP shows "—" | **PASS** | Tooltip shown. No error. |
+| User clears Menge field completely and blurs | **PASS** | Empty string persisted to context. GP shows "—". No crash. |
+| Menge field with very long string | **PASS** | No max-length on Input; `calcGP` will return null for non-numeric. Long string does not crash. |
+| Einheit field with very long string | **PASS** | No max-length. No calculation depends on einheit. No crash. |
+| readOnly prop prevents Menge editing | **PASS** | `<span>` rendered instead of `<Input>` when `readOnly`. |
+| readOnly prop prevents Einheit editing | **PASS** | Same. |
+| EP input still works correctly after Menge/Einheit change | **PASS** | EP input (lines 201-233) is independent. `handleBlur`, `handleKeyDown`, `handleBkiScroll` are all unaffected. Regression confirmed absent. |
+
+---
+
+### Bugs Found
+
+#### BUG-PROJ3-14: Local mengeValue state not synced when context updates position.menge externally
+- **Severity:** Medium
+- **Priority:** P2
+- **Location:** `src/components/kalkulations-row.tsx` line 37: `useState(position.menge)`
+- **Steps to reproduce:**
+  1. Load kalkulation page. A position has menge = "10".
+  2. From another tab or via any code path that calls `updatePosition(id, { menge: "20" })` externally (e.g., if PROJ-2 positionen page were to update the same position, or if `setPositionen` replaces the array with new data), the context value changes to "20".
+  3. Observe the Menge Input field in KalkulationsRow.
+- **Expected:** The Input shows the updated value "20".
+- **Actual:** `mengeValue` was initialized via `useState(position.menge)` at mount time. The `useState` initializer does not re-run when props change. If `position.menge` changes in the context (e.g., on project reload, or future features that bulk-update positions), the Input will still show the stale "10" until the component unmounts and remounts. The same stale-state issue exists for `einheitValue`.
+- **Impact:** In the current application flow this is hard to trigger because Menge and Einheit are only edited in this component itself. However, it is a structural flaw: if any future code path updates `position.menge` via context without going through this component's blur handler, the Input will show stale data. The analogous `inputValue` for EP has the same pattern but works around it via `isFocused` logic — no such workaround exists for menge/einheit.
+- **Note:** This is the same class of issue as BUG-PROJ3-3 (which was downgraded to informational). For Menge/Einheit it is slightly more impactful because the displayed value in the Input IS the stale state (there is no `isFocused` branch that reads from props).
+
+#### BUG-PROJ3-15: No validation on Menge input before persisting — whitespace accepted
+- **Severity:** Low
+- **Priority:** P3
+- **Location:** `src/components/kalkulations-row.tsx` line 131
+- **Steps to reproduce:**
+  1. Click into the Menge input field.
+  2. Enter "  " (spaces only) and blur.
+- **Expected:** Either whitespace is trimmed before saving (persisting "" or "0"), or the user sees a validation warning.
+- **Actual:** `onUpdateMenge?.(position.id, mengeValue)` persists the raw `mengeValue` including any leading/trailing whitespace. `calcGP("  ", ep)` returns null (shows "—"). The data quality issue is minor but whitespace menge values could confuse future exports or comparisons.
+
+#### BUG-PROJ3-16: GP column reads position.menge (context), not mengeValue (local state) — no live preview during Menge edit
+- **Severity:** Low
+- **Priority:** P3
+- **Location:** `src/components/kalkulations-row.tsx` line 50: `const gp = calcGP(position.menge, ep)`
+- **Steps to reproduce:**
+  1. Enter a Menge input field showing "10". EP is set to "100".
+  2. Observe GP column: shows "1.000,00 €".
+  3. Change Menge to "20" (before blurring).
+  4. Observe GP column while still in the field.
+- **Expected (ideal):** GP column updates to "2.000,00 €" in real time as the user types.
+- **Actual:** GP column still shows "1.000,00 €" because `calcGP` uses `position.menge` (the context value, which is "10") not `mengeValue` (the local state, which is "20"). GP only updates after blur triggers `onUpdateMenge` → `updatePosition` → context re-renders.
+- **Note:** This behavior is intentionally consistent with how EP works (EP also only updates GP after blur). It is a conscious design decision, not strictly a bug. However, the UX is less responsive than users may expect — changing the Menge field and seeing no GP change until blur could be confusing. Marking as Low/P3 for UX review.
+
+---
+
+### Previous Bugs Status Check (from prior QA rounds)
+
+| Bug ID | Status | Notes |
+|--------|--------|-------|
+| BUG-PROJ3-1/2/12 | OPEN | Keyboard navigation still requires live browser verification. No changes to `handleKeyDown` in this fix. `e.preventDefault()` on Tab still present. |
+| BUG-PROJ3-6 | OPEN | No Zod validation on BKI match API input. Unaffected by this fix. |
+| BUG-PROJ3-7 | OPEN | No Zod validation on Claude response. Unaffected. |
+| BUG-PROJ3-8/SEC-PROJ3-2 | OPEN | API key in NEXT_PUBLIC_ prefix. Unaffected. |
+| BUG-PROJ3-10 | FIXED | `useEffect(() => { setBkiIdx(2) }, [position.bkiPreise])` now present (line 45). Index resets when new BKI data arrives. |
+| BUG-PROJ3-11 | FIXED | `handleBkiScroll` now validates price with `isFinite(raw) ? Math.max(0, raw) : 0` (line 79) before calling `onUpdateEP`. |
+| BUG-PROJ3-13 | OPEN | Header `w-36` vs cell `w-44` mismatch. No change. |
+
+---
+
+### Regression Check
+
+| Feature | Result | Notes |
+|---------|--------|-------|
+| EP input behavior (existing feature) | **NO REGRESSION** | `handleBlur`, `handleKeyDown`, `handleBkiScroll`, EP `<Input>` are all untouched. The new Menge/Einheit inputs are separate TableCell elements. |
+| BKI scroller | **NO REGRESSION** | Scroller code unchanged. `bkiIdx` useEffect fix confirmed present. |
+| Description expand/collapse | **NO REGRESSION** | `descExpanded` state and toggle button code unchanged. |
+| readOnly mode | **NO REGRESSION** | `readOnly` prop correctly gates both new inputs (Menge/Einheit) and the existing EP input and action buttons. |
+| GP calculation and display | **NO REGRESSION** | `calcGP(position.menge, ep)` unchanged. Netto and Brutto columns render correctly. |
+| Angebotssumme | **NO REGRESSION** | `calcAngebotssumme` reads `position.menge` and `position.einheitspreis` from context. After blur commits changes, sum recalculates correctly. |
+| insertAfter / deletePosition actions | **NO REGRESSION** | Action buttons still gated by `hovered && !readOnly`. No change. |
+| PROJ-4 Export | **NO REGRESSION** | `AngebotPDF` reads `position.menge` and `position.einheit` from context. After Menge/Einheit edits are committed (on blur), the export will use updated values. Correct behavior. |
+| PROJ-2 Positionen page | **NO REGRESSION** | `position-row.tsx` is unrelated to `kalkulations-row.tsx`. No shared state that could conflict. |
+
+---
+
+### TypeScript Correctness
+
+| Check | Result | Notes |
+|-------|--------|-------|
+| New props `onUpdateMenge?: (id: string, menge: string) => void` | **PASS** | Correctly typed. `LVPosition.menge` is `string`, callback signature matches. Optional `?` matches usage pattern. |
+| New props `onUpdateEinheit?: (id: string, einheit: string) => void` | **PASS** | Correctly typed. `LVPosition.einheit` is `string`. Optional `?` matches. |
+| `mengeValue` typed as `string` via useState | **PASS** | `useState(position.menge)` — `position.menge: string` → state inferred as `string`. Correct. |
+| `einheitValue` typed as `string` via useState | **PASS** | `useState(position.einheit)` — same. |
+| page.tsx callbacks match prop signatures | **PASS** | `(id, menge) => updatePosition(id, { menge })` matches `(id: string, menge: string) => void`. `updatePosition` expects `Partial<LVPosition>` which includes `{ menge: string }`. |
+| No new TypeScript errors expected | **PASS** | All types align. No breaking changes to existing interfaces. |
+
+---
+
+### Responsive / Cross-Browser Notes
+
+| Viewport | Notes |
+|----------|-------|
+| 375px (mobile) | Two new Input fields added to Menge (w-20) and Einheit (w-16) columns. These are 80px and 64px wide respectively. On 375px, the table already overflows (pre-existing BUG-PROJ3 responsive issue — no `overflow-x-auto` wrapper). The Inputs do not worsen this materially. The h-8 (32px) height is reasonable but slightly below WCAG 44px touch target. |
+| 768px (tablet) | Inputs fit within their column widths. No new overflow risk. |
+| 1440px (desktop) | No issues. Fixed-width columns well within max-w-5xl container. |
+| Chrome / Firefox | Standard HTML Input. No compatibility concerns. |
+| Safari iOS | Same `inputMode` concern as EP field. Menge field uses `type="text"` without `inputMode` — may show alphabetic keyboard on iOS for numeric menge values. Minor UX concern for mobile use (PRD states Desktop-first, so low priority). |
+
+---
+
+### Summary
+
+**New Feature (Menge & Einheit Editable): 16/18 tests PASS, 2 PARTIAL**
+
+**New Bugs Found This Round:** 3
+- BUG-PROJ3-14 (Medium/P2): Local mengeValue/einheitValue state not synced when context updates externally
+- BUG-PROJ3-15 (Low/P3): Whitespace-only menge accepted without trimming
+- BUG-PROJ3-16 (Low/P3): GP column does not update live during Menge edit (updates on blur only)
+
+**Fixes Confirmed This Round:**
+- BUG-PROJ3-10: FIXED (bkiIdx reset useEffect present)
+- BUG-PROJ3-11: FIXED (price validation in handleBkiScroll)
+
+**Regressions:** None detected.
+
+**Recommendation:** BUG-PROJ3-14 (stale local state) is the highest-priority issue. While hard to trigger in the current app flow, it is a structural correctness flaw. A `useEffect` syncing `mengeValue` from `position.menge` when `position.menge` changes (skipping when the field is focused) would resolve it, following the pattern that should exist for `inputValue` as well. BUG-PROJ3-15 is a quick fix (trim before calling `onUpdateMenge`). BUG-PROJ3-16 is a known design trade-off — if real-time GP preview during Menge editing is desired, `calcGP(mengeValue, ep)` should replace `calcGP(position.menge, ep)` in the render path (but this would show unvalidated preview values).
+
 ## Deployment
 _To be added by /deploy_

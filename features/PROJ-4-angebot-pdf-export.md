@@ -233,5 +233,163 @@ Kein Server-Aufruf nötig — alles passiert direkt im Browser.
 
 **Recommendation:** Fix BUG-01 and BUG-02 before marking PROJ-4 as deployed. Investigate BUG-04 with a runtime test. Address SEC-5 by removing the NEXT_PUBLIC_ prefix and proxying through a server-side route if the key is meant to be secret.
 
+## QA Test Results – 2026-04-06 (Fix: PROJ-4 Export modal scrollable on small screens)
+**Tested:** 2026-04-06
+**Tester:** QA / Red-Team Pen-Test
+**Scope:** Re-test after fix — `DialogContent` given `flex flex-col max-h-[90vh]`; form area given `overflow-y-auto flex-1 pr-1`. Also verify prior bug fix for BUG-01 (export button visibility).
+**Files reviewed:**
+- `src/components/export-modal.tsx` (changed file)
+- `src/app/kalkulation/page.tsx` (export button condition)
+
+---
+
+### Previous Bug Status Check
+
+| Bug ID | Status | Notes |
+|--------|--------|-------|
+| BUG-01 (Export button visible without prices) | **FIXED** | `page.tsx` line 275: `disabled={positionen.length === 0 \|\| !hatPreise}`. The `hatPreise` variable is now correctly used. Button is disabled when no position has EP > 0. |
+| BUG-02 (PDF header not repeating on multi-page PDFs) | **OPEN** | Not in scope of this fix. No changes to `angebot-pdf.tsx` in this round. |
+| BUG-03 (Angebotssumme uses unfiltered positions) | **OPEN** | Informational. No changes. |
+| BUG-04 (Logo path may fail in @react-pdf/renderer) | **OPEN** | No changes to `angebot-pdf.tsx`. |
+| BUG-05 (Modal state not reset on reopen) | **OPEN** | No changes to state initialization logic. |
+
+---
+
+### Acceptance Criteria Re-Test
+
+| # | Criterion | Result | Notes |
+|---|-----------|--------|-------|
+| AC-1 | Button "Angebot exportieren" sichtbar wenn >= 1 Position mit EP > 0 | **PASS** | BUG-01 is now FIXED. `disabled={positionen.length === 0 \|\| !hatPreise}` on line 275 of `page.tsx`. Button is disabled (not hidden) when no prices exist, which is slightly different from "not visible" per spec, but functionally acceptable. |
+| AC-2 | Modal mit Projektname, Kundenname, Datum (vorausgefuellt mit heute) | **PASS** | Unchanged. Modal renders with all required fields. |
+| AC-3 | PDF enthaelt Kopfzeile, Tabelle, Angebotssumme | **PASS** | Unchanged. `angebot-pdf.tsx` unmodified. |
+| AC-4 | PDF hat lesbares Layout | **PASS** | Unchanged. |
+| AC-5 | Dateiname: `Angebot_[Projektname]_[Datum].pdf` | **PASS** | Unchanged. |
+| AC-6 | Option: Positionen ohne Preis ausblenden oder als "Preis auf Anfrage" | **PASS** | Unchanged. |
+| AC-7 | PDF-Generierung dauert unter 5 Sekunden | **PASS (assumed)** | Unchanged. |
+| AC-8 | Ladeindikator waehrend PDF-Generierung | **PASS** | Unchanged. |
+
+**Acceptance Criteria: 8/8 PASS**
+
+---
+
+### New Feature: Scrollable Export Modal
+
+| Test Case | Result | Notes |
+|-----------|--------|-------|
+| DialogContent has `flex flex-col` | **PASS** | Line 83: `className="sm:max-w-md flex flex-col max-h-[90vh]"`. Flex column layout enables the footer to stick to the bottom and the form area to fill available space. |
+| DialogContent has `max-h-[90vh]` | **PASS** | Line 83. Caps modal height at 90% of viewport height on all screen sizes. |
+| Form area has `overflow-y-auto` | **PASS** | Line 88: `className="space-y-4 py-2 overflow-y-auto flex-1 pr-1"`. Scrollbar appears when content exceeds available height. |
+| Form area has `flex-1` | **PASS** | Line 88. Causes form area to expand and fill remaining vertical space between header and footer. This is the correct pattern for a sticky-footer modal. |
+| DialogFooter stays pinned at bottom | **PASS** | `DialogFooter` (line 176) is outside the scrollable `div`. It will not scroll with the form. Correct. |
+| DialogHeader stays pinned at top | **PASS** | `DialogHeader` (line 84) is outside the scrollable `div`. It will not scroll. Correct. |
+| Form scrollable on 375px viewport | **PASS** | At 375px, `max-h-[90vh]` = ~667px × 0.9 = ~600px. The form content (7 fields + radio group + potential alert) is approximately 500-550px tall. On very short phones (e.g., iPhone SE at 667px) the modal will be ~600px and may require scrolling. The `overflow-y-auto` ensures this works correctly. |
+| Form scrollable on 768px viewport | **PASS** | At 768px, `max-h-[90vh]` = ~691px. Form should fit without scrolling on most portrait tablet viewports. Scrolling available if needed. |
+| Form scrollable on 1440px viewport | **PASS** | Ample vertical space. `sm:max-w-md` limits width to ~448px. No overflow expected. |
+| "Alle Preise sind 0" Alert scrolls with form | **PASS** | Alert is inside the scrollable `div` (line 89-93). It adds height to the form area, which may trigger scrolling on small screens. Correct placement. |
+| Scrollbar visual (pr-1 = 4px padding) | **PARTIAL** | Line 88: `pr-1` adds only 4px of right padding to the scrollable area. When a native scrollbar appears (typically 12-15px wide on Windows, 8px on macOS, 0px on iOS overlay scrollbars), the scrollbar will overlap the last 8-11px of the rightmost content (Input fields, RadioGroup items). On Windows this means the right edge of inputs may be partially obscured. `pr-4` (16px) would be safer. Minor cosmetic issue. |
+| No horizontal scroll in modal | **PASS** | No `overflow-x-auto` added, no wide content. The `sm:max-w-md` dialog width constrains all content correctly. |
+
+**Scrollable Modal Tests: 10/11 PASS, 1 PARTIAL**
+
+---
+
+### Edge Cases
+
+| Edge Case | Result | Notes |
+|-----------|--------|-------|
+| Very short viewport (e.g., landscape phone, 375px wide × 300px tall) | **PASS** | `max-h-[90vh]` = 270px. Header (~60px) + footer (~60px) leaves ~150px for the form area. This is very small but `overflow-y-auto` ensures the content is still accessible via scroll. Not ideal UX but does not break. |
+| All positions EP = 0 → Alert shown inside scrollable area | **PASS** | Alert renders at the top of the scrollable div. On small screens this additional ~60px of alert height will push remaining fields down and may require scroll. Correct behavior. |
+| Many fields + Alert → content exceeds modal height | **PASS** | The fix's purpose is exactly this case. `overflow-y-auto flex-1` handles it correctly. |
+| User scrolls form, then clicks Cancel | **PASS** | `onClose()` is called. Modal closes. No state issues with scrolled position. |
+| User scrolls form, then clicks "PDF generieren" | **PASS** | Button in footer is always visible (not in scrollable area). User does not need to scroll to reach it. |
+
+---
+
+### Bugs Found
+
+#### BUG-PROJ4-06: Scrollbar overlaps input content — pr-1 padding insufficient
+- **Severity:** Low
+- **Priority:** P3
+- **Location:** `src/components/export-modal.tsx` line 88: `pr-1`
+- **Steps to reproduce:**
+  1. Open the export modal on a Windows browser (Chrome, Firefox) where native scrollbars are visible and occupy ~15px.
+  2. Resize the browser window to a height where the form content exceeds `max-h-[90vh]`, triggering the scrollbar.
+  3. Observe the right edge of the Input fields and RadioGroup items.
+- **Expected:** Content is fully visible; scrollbar appears outside or beside the content area.
+- **Actual:** The `pr-1` class adds only 4px of right padding inside the scrollable div. The native scrollbar (~15px wide on Windows) overlaps the final ~11px of right-aligned content. Input field right edges are partially obscured when the scrollbar is visible.
+- **Fix suggestion:** Change `pr-1` to `pr-4` (16px) or use `scrollbar-gutter: stable` CSS property to reserve space for the scrollbar before it appears.
+
+---
+
+### Regression Check
+
+| Feature | Result | Notes |
+|---------|--------|-------|
+| Export button visibility (BUG-01 fix) | **PASS — BUG-01 FIXED** | `disabled={positionen.length === 0 \|\| !hatPreise}` now correctly prevents export when no prices exist. Verified at `page.tsx` line 275. |
+| PDF generation (handleExport) | **NO REGRESSION** | `handleExport` function in `page.tsx` is unchanged. PDF generation logic unaffected. |
+| Loading state during export | **NO REGRESSION** | `loading` state, `Loader2` spinner, button disabled during loading — all unchanged. |
+| Cancel button behavior | **NO REGRESSION** | `onClose` callback, `!loading && onClose()` on dialog dismiss — unchanged. |
+| Form field values and validation | **NO REGRESSION** | All `useState` hooks, `canExport` condition, field `disabled={loading}` — unchanged. |
+| PROJ-3 Kalkulation page | **NO REGRESSION** | Only `DialogContent` and the form wrapper `div` classes changed. No logic changes. |
+
+---
+
+### TypeScript Correctness
+
+| Check | Result | Notes |
+|-------|--------|-------|
+| DialogContent className change | **PASS** | `className` is a `string` prop on all shadcn components. Adding Tailwind classes is type-safe. |
+| Form div className change | **PASS** | Same. No interface changes, no new props, no new state. |
+| No new TypeScript errors expected | **PASS** | Pure CSS class changes. No type system impact. |
+
+---
+
+### Responsive / Cross-Browser Notes
+
+| Viewport | Component | Result | Notes |
+|----------|-----------|--------|-------|
+| 375px (mobile) | ExportModal | **PASS** | `max-h-[90vh]` caps height. `overflow-y-auto` enables scroll. `sm:max-w-md` makes modal full-width on small screens (shadcn Dialog behavior). Scrollable content accessible. |
+| 768px (tablet) | ExportModal | **PASS** | Modal fits within sm:max-w-md (448px) centered. Form likely fits without scrolling in portrait. |
+| 1440px (desktop) | ExportModal | **PASS** | No issues. Modal is small and centered. Scrollbar unlikely to appear. |
+| Chrome (Windows) | Scrollbar | **PARTIAL** | Native scrollbar ~15px overlaps content when visible. See BUG-PROJ4-06. |
+| Chrome (macOS) | Scrollbar | **PASS** | Overlay scrollbar (appears on hover only, 0px width when not hovered). Content not obscured. |
+| Firefox (Windows) | Scrollbar | **PARTIAL** | Same native scrollbar overlap issue as Chrome/Windows. |
+| Safari (macOS/iOS) | Scrollbar | **PASS** | Overlay scrollbar. No overlap. |
+| Safari (iOS) | Modal height | **PASS** | `100vh` on iOS Safari can include browser chrome. `max-h-[90vh]` may be slightly taller than expected but still functional. Content scrollable. |
+
+---
+
+### Security Audit (Re-Check, PROJ-4 Specific)
+
+No new security surface introduced by this fix. The change is purely presentational (CSS classes). All previously identified security notes remain unchanged:
+
+| Check | Status |
+|-------|--------|
+| SEC-5 (NEXT_PUBLIC_ API key) | OPEN — unchanged |
+| XSS in PDF (SEC-1) | PASS — unchanged |
+| Filename injection (SEC-2) | PASS — unchanged |
+| Client-side PDF (SEC-3) | PASS — unchanged |
+| Blob URL revocation timing (SEC-8) | PASS — unchanged |
+
+---
+
+### Summary
+
+**Acceptance Criteria: 8/8 PASS**
+
+**Scrollable Modal Feature Tests: 10/11 PASS, 1 PARTIAL**
+
+**New Bugs Found This Round:** 1
+- BUG-PROJ4-06 (Low/P3): Scrollbar overlaps input content on Windows due to insufficient right padding (pr-1 vs recommended pr-4)
+
+**Prior Bug Fixes Verified:**
+- BUG-01 (Export button visible without prices): CONFIRMED FIXED — `disabled={positionen.length === 0 || !hatPreise}` on `page.tsx` line 275
+
+**Still Open from Previous Round:** BUG-02, BUG-03, BUG-04, BUG-05, SEC-5
+
+**Regressions:** None detected.
+
+**Recommendation:** BUG-PROJ4-06 is a minor cosmetic issue on Windows. Fix is trivial: change `pr-1` to `pr-4` in the scrollable div's className. All other acceptance criteria pass. The core scroll fix works correctly — the `flex flex-col max-h-[90vh]` + `overflow-y-auto flex-1` pattern is the correct approach and is implemented properly.
+
 ## Deployment
 _To be added by /deploy_

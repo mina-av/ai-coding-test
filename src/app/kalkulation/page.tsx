@@ -218,6 +218,8 @@ export default function KalkulationPage() {
                   key={pos.id}
                   position={pos}
                   onUpdateEP={(id, ep) => updatePosition(id, { einheitspreis: ep })}
+                  onUpdateMenge={(id, menge) => updatePosition(id, { menge })}
+                  onUpdateEinheit={(id, einheit) => updatePosition(id, { einheit })}
                   onFocusNext={() => focusRow(idx + 1)}
                   onInsertAfter={insertAfter}
                   onDelete={deletePosition}

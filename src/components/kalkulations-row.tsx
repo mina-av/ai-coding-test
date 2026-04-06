@@ -12,6 +12,8 @@ import { formatEuro, parsePrice, calcGP } from '@/lib/kalkulation'
 interface KalkulationsRowProps {
   position: LVPosition
   onUpdateEP: (id: string, ep: number) => void
+  onUpdateMenge?: (id: string, menge: string) => void
+  onUpdateEinheit?: (id: string, einheit: string) => void
   onFocusNext: () => void
   onInsertAfter: (id: string) => void
   onDelete: (id: string) => void
@@ -27,11 +29,16 @@ const KONFIDENZ_LABEL: Record<string, string> = {
 
 const BKI_LABELS = ['Min', '25%', 'Mittel', '75%', 'Max']
 
-export function KalkulationsRow({ position, onUpdateEP, onFocusNext, onInsertAfter, onDelete, epRef, readOnly = false }: KalkulationsRowProps) {
+export function KalkulationsRow({ position, onUpdateEP, onUpdateMenge, onUpdateEinheit, onFocusNext, onInsertAfter, onDelete, epRef, readOnly = false }: KalkulationsRowProps) {
   const [inputValue, setInputValue] = useState(
     position.einheitspreis > 0 ? String(position.einheitspreis).replace('.', ',') : ''
   )
   const [isFocused, setIsFocused] = useState(false)
+  const [mengeValue, setMengeValue] = useState(position.menge)
+  const [einheitValue, setEinheitValue] = useState(position.einheit)
+
+  useEffect(() => { setMengeValue(position.menge) }, [position.menge])
+  useEffect(() => { setEinheitValue(position.einheit) }, [position.einheit])
   const [hovered, setHovered] = useState(false)
   const [descExpanded, setDescExpanded] = useState(false)
   const [bkiIdx, setBkiIdx] = useState(2) // Mittelwert als Default
@@ -116,11 +123,33 @@ export function KalkulationsRow({ position, onUpdateEP, onFocusNext, onInsertAft
         </div>
       </TableCell>
 
-      <TableCell className="w-20 text-right text-sm align-top pt-3">
-        {position.menge || '—'}
+      <TableCell className="w-20 text-right align-top pt-2">
+        {readOnly ? (
+          <span className="text-sm">{position.menge || '—'}</span>
+        ) : (
+          <Input
+            type="text"
+            value={mengeValue}
+            onChange={(e) => setMengeValue(e.target.value)}
+            onBlur={() => onUpdateMenge?.(position.id, mengeValue)}
+            className="h-8 text-right text-sm"
+            aria-label={`Menge für ${position.kurzbeschreibung}`}
+          />
+        )}
       </TableCell>
-      <TableCell className="w-16 text-sm text-muted-foreground align-top pt-3">
-        {position.einheit || '—'}
+      <TableCell className="w-16 align-top pt-2">
+        {readOnly ? (
+          <span className="text-sm text-muted-foreground">{position.einheit || '—'}</span>
+        ) : (
+          <Input
+            type="text"
+            value={einheitValue}
+            onChange={(e) => setEinheitValue(e.target.value)}
+            onBlur={() => onUpdateEinheit?.(position.id, einheitValue)}
+            className="h-8 text-sm"
+            aria-label={`Einheit für ${position.kurzbeschreibung}`}
+          />
+        )}
       </TableCell>
 
       {/* BKI Preis-Scroller + EP-Eingabe */}
