@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { MoreHorizontal, Plus, FolderOpen, Pencil, Trash2, CheckCircle, Clock } from 'lucide-react'
+import { MoreHorizontal, Plus, FolderOpen, Pencil, Trash2, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 import { useProjekte } from '@/contexts/projekte-context'
 import { useLV } from '@/contexts/lv-context'
 import { useUser } from '@/hooks/use-user'
@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +44,7 @@ function fmtDate(iso: string): string {
 }
 
 export default function ProjektePage() {
-  const { projekte, setActiveProjectId, renameProject, deleteProject, setProjectStatus, storageError, clearStorageError } = useProjekte()
+  const { projekte, setActiveProjectId, renameProject, deleteProject, setProjectStatus, storageError, clearStorageError, loading, error } = useProjekte()
   const { setPositionen } = useLV()
   const { email, rolle } = useUser()
   const router = useRouter()
@@ -90,6 +91,13 @@ export default function ProjektePage() {
       <main className="max-w-4xl mx-auto px-6 py-8">
         <MigrationBanner />
 
+        {error && (
+          <div className="mb-4 p-4 bg-destructive/10 text-destructive rounded-lg flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <span className="text-sm">{error}</span>
+          </div>
+        )}
+
         {storageError && (
           <div className="mb-4 p-3 bg-destructive/10 text-destructive text-sm rounded-md flex items-center justify-between">
             <span>{storageError}</span>
@@ -102,7 +110,7 @@ export default function ProjektePage() {
             <h2 className="text-2xl font-bold">
               {rolle === 'teamleiter' ? 'Alle Projekte' : 'Meine Projekte'}
             </h2>
-            {projekte.length > 0 && (
+            {!loading && projekte.length > 0 && (
               <p className="text-muted-foreground mt-1">
                 {projekte.length} Projekt{projekte.length !== 1 ? 'e' : ''}
                 {rolle === 'teamleiter' && ' · Nur-Lesen'}
@@ -117,7 +125,21 @@ export default function ProjektePage() {
           )}
         </div>
 
-        {projekte.length === 0 ? (
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <Card key={i}>
+                <CardContent className="px-5 py-4 flex items-center gap-4">
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                  <Skeleton className="h-9 w-24" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : projekte.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <p className="text-muted-foreground mb-4">
               Noch keine Projekte. Jetzt erstes Projekt erstellen.
