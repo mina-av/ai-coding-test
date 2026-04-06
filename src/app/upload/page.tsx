@@ -7,6 +7,7 @@ import { ExtractionProgress } from '@/components/extraction-progress'
 import { ErrorAlert } from '@/components/error-alert'
 import { useLV } from '@/contexts/lv-context'
 import { useProjekte } from '@/contexts/projekte-context'
+import { AppHeader } from '@/components/app-header'
 import { Button } from '@/components/ui/button'
 
 type PageState = 'idle' | 'extracting' | 'error'
@@ -57,14 +58,7 @@ export default function UploadPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold tracking-tight">BKI Angebots-Tool</h1>
-          <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
-            Alle Projekte
-          </Button>
-        </div>
-      </header>
+      <AppHeader email="nutzer@beispiel.de" rolle="kalkulator" />
 
       <main className="max-w-3xl mx-auto px-6 py-12">
         <div className="mb-8">
