@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, FileText, ChevronDown, ChevronUp } from 'lucide-react'
+import { Loader2, FileText, ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import { useUser } from '@/hooks/use-user'
 import { useLV } from '@/contexts/lv-context'
 import { useProjekte } from '@/contexts/projekte-context'
@@ -20,7 +20,7 @@ function sanitizeFilename(s: string): string {
 }
 
 export default function KalkulationPage() {
-  const { positionen, updatePosition, insertAfter, deletePosition } = useLV()
+  const { positionen, updatePosition, insertAfter, deletePosition, addPosition } = useLV()
   const { email, rolle } = useUser()
   const { projekte, activeProjectId, addAngebot } = useProjekte()
   const readOnly = rolle === 'teamleiter'
@@ -181,11 +181,24 @@ export default function KalkulationPage() {
               {positionen.length} Positionen
             </p>
           </div>
-          {ohnePreis > 0 && (
-            <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50">
-              {ohnePreis} Position{ohnePreis !== 1 ? 'en' : ''} ohne Preis
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {ohnePreis > 0 && (
+              <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50">
+                {ohnePreis} Position{ohnePreis !== 1 ? 'en' : ''} ohne Preis
+              </Badge>
+            )}
+            {!readOnly && hatPreise && (
+              <Button variant="outline" size="sm" onClick={runBkiMatch} disabled={bkiLoading}>
+                {bkiLoading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />BKI…</> : 'BKI-Preise aktualisieren'}
+              </Button>
+            )}
+            {!readOnly && (
+              <Button size="sm" onClick={addPosition}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                Position hinzufügen
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* BKI-Status */}
@@ -315,11 +328,6 @@ export default function KalkulationPage() {
 
         {/* Navigation */}
         <div className="flex justify-end gap-2 pt-2">
-          {!readOnly && hatPreise && (
-            <Button variant="outline" onClick={runBkiMatch} disabled={bkiLoading}>
-              {bkiLoading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />BKI wird aktualisiert…</> : 'BKI-Preise aktualisieren'}
-            </Button>
-          )}
           <Button variant="outline" onClick={handleExcelExport} disabled={positionen.length === 0}>
             Als Excel exportieren
           </Button>
