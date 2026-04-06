@@ -71,14 +71,19 @@ export default function KalkulationPage() {
     }
   }
 
-  // BKI-Matching nur automatisch auslösen wenn noch keine Preise vorhanden
+  // BKI-Matching nur automatisch auslösen wenn noch keine Preise oder BKI-Daten vorhanden
   useEffect(() => {
     if (bkiMatchedRef.current || positionen.length === 0) return
-    if (positionen.some((p) => p.einheitspreis > 0)) return
+    const hatBereitsPreise = positionen.some((p) => p.einheitspreis > 0)
+    const hatBereitssBkiDaten = positionen.some((p) => p.bkiKonfidenz != null)
+    if (hatBereitsPreise || hatBereitssBkiDaten) {
+      bkiMatchedRef.current = true // nicht nochmal prüfen
+      return
+    }
     bkiMatchedRef.current = true
     runBkiMatch()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [positionen.length])
+  }, [positionen])
 
   const ohnePreis = positionen.filter((p) => p.einheitspreis === 0).length
   const angebotssumme = calcAngebotssumme(positionen)
