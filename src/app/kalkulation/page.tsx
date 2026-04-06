@@ -54,13 +54,15 @@ export default function KalkulationPage() {
           throw new Error(data.error ?? 'BKI-Matching fehlgeschlagen.')
         }
         const { matches } = await res.json()
-        matches.forEach((m: { id: string; bkiVorschlag: number; bkiKonfidenz: string; bkiPositionsnummer: string; bkiBeschreibung: string }) => {
+        matches.forEach((m: { id: string; bkiVorschlag: number; bkiPreise?: [number, number, number, number, number]; bkiKonfidenz: string; bkiPositionsnummer: string; bkiBeschreibung: string }) => {
+          const mittelwert = m.bkiPreise?.[2] ?? m.bkiVorschlag
           updatePosition(m.id, {
-            bkiVorschlag: m.bkiVorschlag || undefined,
-            bkiKonfidenz: m.bkiKonfidenz as 'hoch' | 'mittel' | 'niedrig',
+            bkiVorschlag: mittelwert || undefined,
+            bkiPreise: m.bkiPreise,
+            bkiKonfidenz: m.bkiKonfidenz as 'hoch' | 'mittel' | 'niedrig' | 'schätzung',
             bkiPositionsnummer: m.bkiPositionsnummer || undefined,
             bkiBeschreibung: m.bkiBeschreibung || undefined,
-            ...(m.bkiVorschlag > 0 ? { einheitspreis: m.bkiVorschlag } : {}),
+            ...(mittelwert > 0 ? { einheitspreis: mittelwert } : {}),
           })
         })
       } catch (err) {
@@ -204,7 +206,7 @@ export default function KalkulationPage() {
                 <TableHead>Beschreibung</TableHead>
                 <TableHead className="w-20 text-right">Menge</TableHead>
                 <TableHead className="w-16">Einheit</TableHead>
-                <TableHead className="w-36 text-right">Einheitspreis Netto</TableHead>
+                <TableHead className="w-44 text-right">Einheitspreis Netto</TableHead>
                 <TableHead className="w-32 text-right">Netto (€)</TableHead>
                 <TableHead className="w-32 text-right">Brutto (€)</TableHead>
                 <TableHead className="w-8" />

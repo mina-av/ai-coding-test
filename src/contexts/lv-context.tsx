@@ -12,6 +12,7 @@ export interface LVPosition {
   einheit: string
   einheitspreis: number
   bkiVorschlag?: number
+  bkiPreise?: [number, number, number, number, number]
   bkiKonfidenz?: 'hoch' | 'mittel' | 'niedrig' | 'schätzung'
   bkiPositionsnummer?: string
   bkiBeschreibung?: string

@@ -3,6 +3,31 @@ import { NextRequest, NextResponse } from 'next/server'
 const pdfParse = require('pdf-parse/lib/pdf-parse')
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
+import { z } from 'zod'
+
+// BUG-PROJ3-6: Zod-Schema für eingehende Position-Objekte
+const LVPositionSchema = z.object({
+  id: z.string().min(1),
+  kurzbeschreibung: z.string(),
+  menge: z.string(),
+  einheit: z.string(),
+})
+
+// BUG-PROJ3-7: Zod-Schema für Claude-Response
+const BkiMatchSchema = z.object({
+  id: z.string().min(1),
+  bkiVorschlag: z.number().finite().nonnegative(),
+  bkiPreise: z.tuple([
+    z.number().finite().nonnegative(),
+    z.number().finite().nonnegative(),
+    z.number().finite().nonnegative(),
+    z.number().finite().nonnegative(),
+    z.number().finite().nonnegative(),
+  ]).optional(),
+  bkiKonfidenz: z.enum(['hoch', 'mittel', 'niedrig', 'schätzung']),
+  bkiPositionsnummer: z.string(),
+  bkiBeschreibung: z.string(),
+})
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -71,10 +96,15 @@ export async function POST(req: NextRequest) {
   let positionen: LVPosition[]
   try {
     const body = await req.json()
-    positionen = body.positionen
-    if (!Array.isArray(positionen) || positionen.length === 0) {
+    if (!Array.isArray(body.positionen) || body.positionen.length === 0) {
       return NextResponse.json({ error: 'Keine Positionen übergeben.' }, { status: 400 })
     }
+    // BUG-PROJ3-6: Jedes Position-Objekt mit Zod validieren
+    const parsed = z.array(LVPositionSchema).safeParse(body.positionen)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Ungültige Positionsdaten.' }, { status: 400 })
+    }
+    positionen = parsed.data
   } catch {
     return NextResponse.json({ error: 'Ungültiger Request.' }, { status: 400 })
   }
@@ -99,17 +129,25 @@ export async function POST(req: NextRequest) {
 
 Ordne jede der folgenden LV-Positionen dem passenden Preis aus der BKI Kompakt 2023 Preisdatenbank zu.
 
+BKI Kompakt 2023 enthält für jede Position 5 NETTO-Preiswerte (ohne MwSt.):
+- a = Minimum
+- b = Unterer Quartilswert (25 %)
+- c = Mittelwert (50 %)
+- d = Oberer Quartilswert (75 %)
+- e = Maximum
+
 Für jede Position gib zurück:
 - id: die ID der Position (unverändert)
-- bkiVorschlag: Einheitspreis in EUR als Zahl — entweder aus BKI (Mittelwert) oder als Marktschätzung
-- bkiKonfidenz: "hoch" (gute BKI-Übereinstimmung), "mittel" (ungefähre BKI-Übereinstimmung), "niedrig" (sehr unsichere BKI-Übereinstimmung) oder "schätzung" (kein BKI-Eintrag gefunden, Preis ist eine Marktschätzung auf Basis allgemeiner Baukostenerfahrung)
+- bkiVorschlag: Mittelwert (c) in EUR Netto als Zahl — entweder aus BKI oder als Marktschätzung
+- bkiPreise: Array mit genau 5 NETTO-Werten [min, q1, mittel, q3, max] — bei Marktschätzung sinnvolle Preisspanne angeben
+- bkiKonfidenz: "hoch" (gute BKI-Übereinstimmung), "mittel" (ungefähre BKI-Übereinstimmung), "niedrig" (sehr unsichere BKI-Übereinstimmung) oder "schätzung" (kein BKI-Eintrag gefunden, Preise sind Marktschätzungen)
 - bkiPositionsnummer: Positionsnummer aus der BKI-Datenbank — leer bei Marktschätzung
 - bkiBeschreibung: Kurzbeschreibung aus der BKI-Datenbank — leer bei Marktschätzung
 
-Wichtig: Jede Position MUSS einen bkiVorschlag > 0 erhalten. Wenn kein passender BKI-Eintrag gefunden wird, schätze den Marktpreis auf Basis deiner Erfahrung mit deutschen Baukosten und setze bkiKonfidenz auf "schätzung".
+Wichtig: Alle Preise sind NETTO (ohne MwSt. 19 %). Jede Position MUSS bkiPreise mit genau 5 Werten > 0 erhalten. bkiVorschlag muss gleich bkiPreise[2] sein.
 
 Antworte NUR mit einem gültigen JSON-Array. Kein Text davor oder danach.
-Format: [{"id":"...","bkiVorschlag":0.00,"bkiKonfidenz":"hoch","bkiPositionsnummer":"...","bkiBeschreibung":"..."}]
+Format: [{"id":"...","bkiVorschlag":100.00,"bkiPreise":[50.00,75.00,100.00,130.00,180.00],"bkiKonfidenz":"hoch","bkiPositionsnummer":"...","bkiBeschreibung":"..."}]
 
 BKI Kompakt 2023 Preisdatenbank (Auszug):
 ${bkiContext}`
@@ -136,7 +174,7 @@ ${bkiContext}`
       batches.push(positionen.slice(i, i + BATCH_SIZE))
     }
 
-    const batchResults: { id: string; bkiVorschlag: number; bkiKonfidenz: string; bkiPositionsnummer: string; bkiBeschreibung: string }[][] = []
+    const batchResults: z.infer<typeof BkiMatchSchema>[][] = []
     for (const batch of batches) {
       const message = await client.messages.create(
         {
@@ -157,7 +195,10 @@ ${bkiContext}`
       const jsonMatch = raw.match(/\[[\s\S]*\]/)
       if (!jsonMatch) { batchResults.push([]); continue }
       try {
-        batchResults.push(JSON.parse(jsonMatch[0]))
+        const parsed = JSON.parse(jsonMatch[0])
+        // BUG-PROJ3-7: Claude-Response mit Zod validieren, ungültige Einträge filtern
+        const validated = z.array(BkiMatchSchema).safeParse(parsed)
+        batchResults.push(validated.success ? validated.data : [])
       } catch {
         batchResults.push([])
       }
