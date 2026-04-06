@@ -4,11 +4,7 @@ import { z } from 'zod'
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse/lib/pdf-parse')
 
-if (!process.env.ANTHROPIC_API_KEY) {
-  throw new Error('ANTHROPIC_API_KEY environment variable is not set')
-}
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? '' })
 
 // Für PDFs über diesem Schwellwert wird Text-Chunking statt base64 genutzt,
 // da max_tokens für viele Positionen sonst nicht ausreicht
