@@ -2,7 +2,7 @@
 
 ## Status: Deployed
 **Created:** 2026-03-25
-**Last Updated:** 2026-04-01
+**Last Updated:** 2026-04-06
 
 ## Dependencies
 - Requires: PROJ-2 (LV-Positionen anzeigen & bearbeiten) — Positionen mit Menge und Einheit müssen vorhanden sein
@@ -734,4 +734,14 @@ No change. Still relies on `NEXT_PUBLIC_` key for "auth".
 **Recommendation:** BUG-PROJ3-14 (stale local state) is the highest-priority issue. While hard to trigger in the current app flow, it is a structural correctness flaw. A `useEffect` syncing `mengeValue` from `position.menge` when `position.menge` changes (skipping when the field is focused) would resolve it, following the pattern that should exist for `inputValue` as well. BUG-PROJ3-15 is a quick fix (trim before calling `onUpdateMenge`). BUG-PROJ3-16 is a known design trade-off — if real-time GP preview during Menge editing is desired, `calcGP(mengeValue, ep)` should replace `calcGP(position.menge, ep)` in the render path (but this would show unvalidated preview values).
 
 ## Deployment
-_To be added by /deploy_
+
+**Status:** ✅ Deployed
+**Deployed:** 2026-04-06
+**Commit:** `f7dba39` — feat(PROJ-3): vollständige BKI-Leistungsbeschreibung anzeigen
+**Build:** ✅ `npm run build` erfolgreich (Next.js 16.1.1 Turbopack)
+**Deploy:** Push auf `main` → Vercel Auto-Deploy
+
+### QA vor Deployment (2026-04-06)
+- 16/16 Tests PASS (neue Feature: BKI vollständige Beschreibung)
+- 3 neue Bugs (alle Low/P3, kein Critical/High)
+- Keine Regressions
