@@ -142,12 +142,12 @@ Für jede Position gib zurück:
 - bkiPreise: Array mit genau 5 NETTO-Werten [min, q1, mittel, q3, max] — bei Marktschätzung sinnvolle Preisspanne angeben
 - bkiKonfidenz: "hoch" (gute BKI-Übereinstimmung), "mittel" (ungefähre BKI-Übereinstimmung), "niedrig" (sehr unsichere BKI-Übereinstimmung) oder "schätzung" (kein BKI-Eintrag gefunden, Preise sind Marktschätzungen)
 - bkiPositionsnummer: Positionsnummer aus der BKI-Datenbank — leer bei Marktschätzung
-- bkiBeschreibung: Kurzbeschreibung aus der BKI-Datenbank — leer bei Marktschätzung
+- bkiBeschreibung: Vollständige Leistungsbeschreibung der Position exakt so wie sie in der BKI-Datenbank steht — leer bei Marktschätzung
 
 Wichtig: Alle Preise sind NETTO (ohne MwSt. 19 %). Jede Position MUSS bkiPreise mit genau 5 Werten > 0 erhalten. bkiVorschlag muss gleich bkiPreise[2] sein.
 
 Antworte NUR mit einem gültigen JSON-Array. Kein Text davor oder danach.
-Format: [{"id":"...","bkiVorschlag":100.00,"bkiPreise":[50.00,75.00,100.00,130.00,180.00],"bkiKonfidenz":"hoch","bkiPositionsnummer":"...","bkiBeschreibung":"..."}]
+Format: [{"id":"...","bkiVorschlag":100.00,"bkiPreise":[50.00,75.00,100.00,130.00,180.00],"bkiKonfidenz":"hoch","bkiPositionsnummer":"...","bkiBeschreibung":"Vollständige Beschreibung aus dem BKI-Dokument..."}]
 
 BKI Kompakt 2023 Preisdatenbank (Auszug):
 ${bkiContext}`

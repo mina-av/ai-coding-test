@@ -41,6 +41,7 @@ export function KalkulationsRow({ position, onUpdateEP, onUpdateMenge, onUpdateE
   useEffect(() => { setEinheitValue(position.einheit) }, [position.einheit])
   const [hovered, setHovered] = useState(false)
   const [descExpanded, setDescExpanded] = useState(false)
+  const [bkiDescExpanded, setBkiDescExpanded] = useState(false)
   const [bkiIdx, setBkiIdx] = useState(2) // Mittelwert als Default
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -158,13 +159,34 @@ export function KalkulationsRow({ position, onUpdateEP, onUpdateMenge, onUpdateE
         {position.bkiKonfidenz === 'schätzung' ? (
           <p className="text-xs text-amber-600 mb-1">Marktschätzung</p>
         ) : position.bkiPositionsnummer ? (
-          <p className="text-xs text-muted-foreground mb-1">
-            <span className="font-mono">{position.bkiPositionsnummer}</span>
-            {position.bkiBeschreibung && ` · ${position.bkiBeschreibung}`}
-            {position.bkiKonfidenz && KONFIDENZ_LABEL[position.bkiKonfidenz] && (
-              <span className="ml-1 text-muted-foreground/60">({KONFIDENZ_LABEL[position.bkiKonfidenz]})</span>
+          <div className="mb-1">
+            <p className="text-xs text-muted-foreground">
+              <span className="font-mono">{position.bkiPositionsnummer}</span>
+              {position.bkiKonfidenz && KONFIDENZ_LABEL[position.bkiKonfidenz] && (
+                <span className="ml-1 text-muted-foreground/60">({KONFIDENZ_LABEL[position.bkiKonfidenz]})</span>
+              )}
+            </p>
+            {position.bkiBeschreibung && (
+              <div>
+                <p className={['text-xs text-muted-foreground mt-0.5', bkiDescExpanded ? '' : 'line-clamp-2'].join(' ')}>
+                  {position.bkiBeschreibung}
+                </p>
+                {position.bkiBeschreibung.length > 80 && (
+                  <button
+                    type="button"
+                    onClick={() => setBkiDescExpanded((v) => !v)}
+                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-0.5 focus:outline-none mt-0.5"
+                  >
+                    {bkiDescExpanded ? (
+                      <><ChevronUp className="h-3 w-3" /> Weniger</>
+                    ) : (
+                      <><ChevronDown className="h-3 w-3" /> Mehr</>
+                    )}
+                  </button>
+                )}
+              </div>
             )}
-          </p>
+          </div>
         ) : null}
 
         {/* 5 BKI Netto-Preise scrollbar */}
