@@ -36,46 +36,46 @@ export default function KalkulationPage() {
   const gespeicherteAngebote = aktiveProjekt?.angebote ?? []
   const lastAngebot = gespeicherteAngebote[0]
 
-  // BKI-Matching einmalig beim Laden der Seite auslösen
+  async function runBkiMatch() {
+    setBkiLoading(true)
+    setBkiError(null)
+    try {
+      const res = await fetch('/api/bki/match', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.NEXT_PUBLIC_EXTRACT_API_KEY ?? '',
+        },
+        body: JSON.stringify({ positionen }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error ?? 'BKI-Matching fehlgeschlagen.')
+      }
+      const { matches } = await res.json()
+      matches.forEach((m: { id: string; bkiVorschlag: number; bkiPreise?: [number, number, number, number, number]; bkiKonfidenz: string; bkiPositionsnummer: string; bkiBeschreibung: string }) => {
+        const mittelwert = m.bkiPreise?.[2] ?? m.bkiVorschlag
+        updatePosition(m.id, {
+          bkiVorschlag: mittelwert || undefined,
+          bkiPreise: m.bkiPreise,
+          bkiKonfidenz: m.bkiKonfidenz as 'hoch' | 'mittel' | 'niedrig' | 'schätzung',
+          bkiPositionsnummer: m.bkiPositionsnummer || undefined,
+          bkiBeschreibung: m.bkiBeschreibung || undefined,
+          ...(mittelwert > 0 ? { einheitspreis: mittelwert } : {}),
+        })
+      })
+    } catch (err) {
+      setBkiError(err instanceof Error ? err.message : 'BKI-Matching fehlgeschlagen.')
+    } finally {
+      setBkiLoading(false)
+    }
+  }
+
+  // BKI-Matching nur automatisch auslösen wenn noch keine Preise vorhanden
   useEffect(() => {
     if (bkiMatchedRef.current || positionen.length === 0) return
+    if (positionen.some((p) => p.einheitspreis > 0)) return
     bkiMatchedRef.current = true
-
-    async function runBkiMatch() {
-      setBkiLoading(true)
-      setBkiError(null)
-      try {
-        const res = await fetch('/api/bki/match', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': process.env.NEXT_PUBLIC_EXTRACT_API_KEY ?? '',
-          },
-          body: JSON.stringify({ positionen }),
-        })
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}))
-          throw new Error(data.error ?? 'BKI-Matching fehlgeschlagen.')
-        }
-        const { matches } = await res.json()
-        matches.forEach((m: { id: string; bkiVorschlag: number; bkiPreise?: [number, number, number, number, number]; bkiKonfidenz: string; bkiPositionsnummer: string; bkiBeschreibung: string }) => {
-          const mittelwert = m.bkiPreise?.[2] ?? m.bkiVorschlag
-          updatePosition(m.id, {
-            bkiVorschlag: mittelwert || undefined,
-            bkiPreise: m.bkiPreise,
-            bkiKonfidenz: m.bkiKonfidenz as 'hoch' | 'mittel' | 'niedrig' | 'schätzung',
-            bkiPositionsnummer: m.bkiPositionsnummer || undefined,
-            bkiBeschreibung: m.bkiBeschreibung || undefined,
-            ...(mittelwert > 0 ? { einheitspreis: mittelwert } : {}),
-          })
-        })
-      } catch (err) {
-        setBkiError(err instanceof Error ? err.message : 'BKI-Matching fehlgeschlagen.')
-      } finally {
-        setBkiLoading(false)
-      }
-    }
-
     runBkiMatch()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [positionen.length])
@@ -310,6 +310,11 @@ export default function KalkulationPage() {
 
         {/* Navigation */}
         <div className="flex justify-end gap-2 pt-2">
+          {!readOnly && hatPreise && (
+            <Button variant="outline" onClick={runBkiMatch} disabled={bkiLoading}>
+              {bkiLoading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />BKI wird aktualisiert…</> : 'BKI-Preise aktualisieren'}
+            </Button>
+          )}
           <Button variant="outline" onClick={handleExcelExport} disabled={positionen.length === 0}>
             Als Excel exportieren
           </Button>
