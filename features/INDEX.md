@@ -19,7 +19,8 @@
 | PROJ-5 | Projektverwaltung (mehrere LVs) | Deployed | [PROJ-5-projektverwaltung.md](PROJ-5-projektverwaltung.md) | 2026-03-25 |
 | PROJ-6 | User Auth & Teamzugang | Deployed | [PROJ-6-user-auth.md](PROJ-6-user-auth.md) | 2026-04-01 |
 | PROJ-7 | Anfragen speichern | Deployed | — | 2026-04-06 |
+| PROJ-8 | Supabase-Migration | In Progress | [PROJ-8-supabase-migration.md](PROJ-8-supabase-migration.md) | 2026-04-06 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-8
+## Next Available ID: PROJ-9

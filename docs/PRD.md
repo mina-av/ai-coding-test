@@ -19,6 +19,7 @@ Ein internes Web-Tool für Bau- und Handwerksbetriebe, das Leistungsverzeichniss
 | P1 | Angebot als PDF exportieren | Planned |
 | P1 | Projektverwaltung (mehrere LVs) | Planned |
 | P2 | User Auth & Teamzugang | Planned |
+| P2 | Supabase-Migration (localStorage → Cloud) | Planned |
 
 ## Success Metrics
 - Zeit von PDF-Upload bis fertigem Angebot: unter 15 Minuten
