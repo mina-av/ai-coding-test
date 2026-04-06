@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react'
 import { LVPosition } from './lv-context'
 import { createClient } from '@/lib/supabase'
 
@@ -144,8 +144,12 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const activeProjectIdRef = useRef<string | null>(null)
 
-  // Eine stabile Supabase-Instanz pro Provider-Mount
-  const supabase = useMemo(() => createClient(), [])
+  // Supabase-Client nur client-seitig erzeugen (nicht während SSR/Prerendering)
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
+  function getSupabase() {
+    if (!supabaseRef.current) supabaseRef.current = createClient()
+    return supabaseRef.current
+  }
 
   useEffect(() => { activeProjectIdRef.current = activeProjectId }, [activeProjectId])
 
@@ -156,7 +160,8 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
         setLoading(true)
         setError(null)
 
-        const { data: dbProjekte, error: projError } = await supabase
+        const sb = getSupabase()
+        const { data: dbProjekte, error: projError } = await sb
           .from('projekte')
           .select('*')
           .order('created_at', { ascending: false })
@@ -172,12 +177,12 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
         const projektIds = dbProjekte.map((p: DbProjekt) => p.id)
 
         const [posRes, angRes] = await Promise.all([
-          supabase
+          sb
             .from('positionen')
             .select('*')
             .in('projekt_id', projektIds)
             .order('sort_order', { ascending: true }),
-          supabase
+          sb
             .from('angebote')
             .select('*')
             .in('projekt_id', projektIds)
@@ -237,8 +242,9 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
     // Write to Supabase async
     ;(async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        const { error: projErr } = await supabase.from('projekte').insert({
+        const sb = getSupabase()
+        const { data: { user } } = await sb.auth.getUser()
+        const { error: projErr } = await sb.from('projekte').insert({
           id,
           name,
           status: 'in-bearbeitung',
@@ -250,7 +256,7 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
 
         if (positionen.length > 0) {
           const dbPositionen = positionen.map((pos, idx) => mapLVPositionToDb(pos, id, idx))
-          const { error: posErr } = await supabase.from('positionen').insert(dbPositionen)
+          const { error: posErr } = await sb.from('positionen').insert(dbPositionen)
           if (posErr) throw posErr
         }
       } catch (err) {
@@ -260,7 +266,7 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
     })()
 
     return id
-  }, [supabase])
+  }, [])
 
   const updateActiveProject = useCallback((positionen: LVPosition[]) => {
     const id = activeProjectIdRef.current
@@ -276,23 +282,24 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
     // Write to Supabase: delete-then-insert for positionen
     ;(async () => {
       try {
+        const sb = getSupabase()
         const now = new Date().toISOString()
-        const { error: delErr } = await supabase.from('positionen').delete().eq('projekt_id', id)
+        const { error: delErr } = await sb.from('positionen').delete().eq('projekt_id', id)
         if (delErr) throw delErr
 
         if (positionen.length > 0) {
           const dbPositionen = positionen.map((pos, idx) => mapLVPositionToDb(pos, id, idx))
-          const { error: insErr } = await supabase.from('positionen').insert(dbPositionen)
+          const { error: insErr } = await sb.from('positionen').insert(dbPositionen)
           if (insErr) throw insErr
         }
 
-        await supabase.from('projekte').update({ updated_at: now }).eq('id', id)
+        await sb.from('projekte').update({ updated_at: now }).eq('id', id)
       } catch (err) {
         console.error('Fehler beim Aktualisieren der Positionen:', err)
         setStorageError('Positionen konnten nicht gespeichert werden. Bitte erneut versuchen.')
       }
     })()
-  }, [supabase])
+  }, [])
 
   const renameProject = useCallback((id: string, name: string) => {
     const now = new Date().toISOString()
@@ -302,7 +309,7 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
 
     ;(async () => {
       try {
-        const { error: err } = await supabase
+        const { error: err } = await getSupabase()
           .from('projekte')
           .update({ name, updated_at: now })
           .eq('id', id)
@@ -312,7 +319,7 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
         setStorageError('Projekt konnte nicht umbenannt werden.')
       }
     })()
-  }, [supabase])
+  }, [])
 
   const deleteProject = useCallback((id: string) => {
     setProjekte(prev => prev.filter(p => p.id !== id))
@@ -323,14 +330,14 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
 
     ;(async () => {
       try {
-        const { error: err } = await supabase.from('projekte').delete().eq('id', id)
+        const { error: err } = await getSupabase().from('projekte').delete().eq('id', id)
         if (err) throw err
       } catch (err) {
         console.error('Fehler beim Löschen:', err)
         setStorageError('Projekt konnte nicht gelöscht werden.')
       }
     })()
-  }, [supabase])
+  }, [])
 
   const setProjectStatus = useCallback((id: string, status: Projekt['status']) => {
     const now = new Date().toISOString()
@@ -340,7 +347,7 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
 
     ;(async () => {
       try {
-        const { error: err } = await supabase
+        const { error: err } = await getSupabase()
           .from('projekte')
           .update({ status, updated_at: now })
           .eq('id', id)
@@ -350,7 +357,7 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
         setStorageError('Status konnte nicht geändert werden.')
       }
     })()
-  }, [supabase])
+  }, [])
 
   const addAngebot = useCallback((data: Omit<SavedAngebot, 'exportedAt'>) => {
     const id = activeProjectIdRef.current
@@ -368,7 +375,7 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
 
     ;(async () => {
       try {
-        const { error: err } = await supabase.from('angebote').insert({
+        const { error: err } = await getSupabase().from('angebote').insert({
           projekt_id: id,
           projektname: data.projektname,
           kundenname: data.kundenname,
@@ -385,7 +392,7 @@ export function ProjekteProvider({ children }: { children: ReactNode }) {
         setStorageError('Angebot konnte nicht gespeichert werden.')
       }
     })()
-  }, [supabase])
+  }, [])
 
   return (
     <ProjekteContext.Provider value={{
